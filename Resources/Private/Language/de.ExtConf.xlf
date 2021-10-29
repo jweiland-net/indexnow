@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<xliff version="1.0">
+	<file source-language="en" datatype="plaintext" original="messages" date="2021-10-29T14:23:40Z" product-name="indexnow">
+		<header/>
+		<body>
+			<trans-unit id="apiKey">
+				<source>API Key: Each request needs an API key to identify your URLs. You can build one here: https://www.bing.com/indexnow</source>
+				<target>API Key: Jede Anfrage an den Suchmaschinenanbieter erfordert einen API Key, um die URLs zuordnen zu können. Du kannst Dir hier einen generieren lassen: https://www.bing.com/indexnow</target>
+			</trans-unit>
+			<trans-unit id="searchEngineEndpoint">
+				<source>Search Engine Endpoint: Define the index-now URL of searchengine which should be used to inform about modified content. Use ###URL### and ###APIKEY### for dynamic values.</source>
+				<target>Endpunkt der Suchmaschine: Geben Sie hier die index-now URL zum Suchmaschinenanbieter an, um ihn über aktualisierte Inhalte zu informieren. Verwende ###URL### und ###APIKEY### als dynamische Werte.</target>
+			</trans-unit>
+		</body>
+	</file>
+</xliff>

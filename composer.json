@@ -1,0 +1,49 @@
+{
+	"name": "jweiland/indexnow",
+	"description": "Site package",
+	"type": "typo3-cms-extension",
+	"version": "0.0.1",
+	"license": "GPL-2.0-or-later",
+	"authors": [
+		{
+			"name": "Stefan Froemken",
+			"email": "sfroemken@jweiland.net"
+		}
+	],
+	"require": {
+		"typo3/cms-core": "^10.4.19 || ^11.5.1"
+	},
+	"require-dev": {
+		"roave/security-advisories": "dev-latest",
+		"friendsofphp/php-cs-fixer": "^3.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"JWeiland\\IndexNow\\": "Classes/"
+		}
+	},
+	"config": {
+		"vendor-dir": ".build/vendor"
+	},
+	"extra": {
+		"typo3/cms": {
+			"extension-key": "indexnow",
+			"app-dir": ".build",
+			"web-dir": ".build/public"
+		}
+	},
+	"scripts": {
+		"php:fix": ".build/vendor/bin/php-cs-fixer --config=Build/.php_cs.php fix Classes Tests",
+		"ci:php:lint": "find *.php Classes Configuration Tests -name '*.php' -print0 | xargs -0 -n 1 -P 4 php -l",
+		"ci:php:fixer": ".build/vendor/bin/php-cs-fixer --config=Build/.php_cs.php fix --dry-run -v --show-progress=dots --diff-format=udiff Classes Tests",
+		"ci:tests:unit": "php -d date.timezone=Europe/Berlin .build/vendor/bin/phpunit -c .build/vendor/nimut/testing-framework/res/Configuration/UnitTests.xml Tests/Unit",
+		"ci:tests:functional": "find 'Tests/Functional' -wholename '*Test.php' | parallel --gnu 'echo; echo \"Running functional test suite {}\"; php -d date.timezone=Europe/Berlin .build/vendor/bin/phpunit -c .build/vendor/nimut/testing-framework/res/Configuration/FunctionalTests.xml {}';",
+		"link-extension": [
+			"@php -r 'is_dir($extFolder=__DIR__.\"/.build/public/typo3conf/ext/\") || mkdir($extFolder, 0777, true);'",
+			"@php -r 'file_exists($extFolder=__DIR__.\"/.build/public/typo3conf/ext/indexnow\") || symlink(__DIR__,$extFolder);'"
+		],
+		"post-autoload-dump": [
+			"@link-extension"
+		]
+	}
+}

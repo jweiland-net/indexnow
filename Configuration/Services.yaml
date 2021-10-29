@@ -1,0 +1,12 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  JWeiland\IndexNow\:
+    resource: '../Classes/*'
+
+  # Called by makeInstance in TYPO3s DataHandler
+  JWeiland\IndexNow\Hook\DataHandlerHook:
+    public: true
