@@ -156,7 +156,8 @@ class DataHandlerHook
      * @param array $recordFromRequest
      * @return array
      */
-    protected function getMergedRecord($uid, string $table, array $recordFromRequest): array {
+    protected function getMergedRecord($uid, string $table, array $recordFromRequest): array
+    {
         if (!MathUtility::canBeInterpretedAsInteger($uid)) {
             return $recordFromRequest;
         }
