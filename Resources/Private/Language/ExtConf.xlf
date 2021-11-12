@@ -9,6 +9,9 @@
 			<trans-unit id="searchEngineEndpoint">
 				<source>Search Engine Endpoint: Define the index-now URL of searchengine which should be used to inform about modified content. Use ###URL### and ###APIKEY### for dynamic values.</source>
 			</trans-unit>
+			<trans-unit id="enableDebug">
+				<source>Enable debug mode: In case of problems it can help to activate the debug mode. In this case, additional information is displayed in the backend, such as the URL that is sent to the search engines.</source>
+			</trans-unit>
 		</body>
 	</file>
 </xliff>

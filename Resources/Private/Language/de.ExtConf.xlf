@@ -11,6 +11,10 @@
 				<source>Search Engine Endpoint: Define the index-now URL of searchengine which should be used to inform about modified content. Use ###URL### and ###APIKEY### for dynamic values.</source>
 				<target>Endpunkt der Suchmaschine: Geben Sie hier die index-now URL zum Suchmaschinenanbieter an, um ihn über aktualisierte Inhalte zu informieren. Verwende ###URL### und ###APIKEY### als dynamische Werte.</target>
 			</trans-unit>
+			<trans-unit id="enableDebug">
+				<source>Enable debug mode: In case of problems it can help to activate the debug mode. In this case, additional information is displayed in the backend, such as the URL that is sent to the search engines.</source>
+				<target>Debug Modus aktivieren: Bei Problemen kann es helfen des Debug Modus zu aktivieren. In diesem Falle werden zusätzliche Informationen im Backend ausgegeben, wie z.B. die URL, die an die Suchmaschinen gesendet wird.</target>
+			</trans-unit>
 		</body>
 	</file>
 </xliff>

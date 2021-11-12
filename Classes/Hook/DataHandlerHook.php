@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace JWeiland\IndexNow\Hook;
 
 use GuzzleHttp\Exception\ClientException;
+use JWeiland\IndexNow\Configuration\Exception\ApiKeyNotAvailableException;
 use JWeiland\IndexNow\Configuration\ExtConf;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
@@ -56,11 +57,19 @@ class DataHandlerHook
                     continue;
                 }
 
-                $this->notifySearchEngine(
-                    $this->getUrlForSearchEngineEndpoint(
-                        $this->getPreviewUrl($pageUid)
-                    )
-                );
+                try {
+                    $this->notifySearchEngine(
+                        $this->getUrlForSearchEngineEndpoint(
+                            $this->getPreviewUrl($pageUid)
+                        )
+                    );
+                } catch (ApiKeyNotAvailableException $apiKeyNotAvailableException) {
+                    $this->sendBackendNotification(
+                        'error',
+                        'Missing API key',
+                        'Please set an API key for EXT:indexnow in extension settings'
+                    );
+                }
             }
         }
     }
@@ -104,16 +113,21 @@ class DataHandlerHook
                 );
             }
 
-            GeneralUtility::makeInstance(PageRenderer::class)->loadRequireJsModule(
-                'TYPO3/CMS/Backend/Notification',
-                sprintf(
-                    'function(Notification) { Notification.%s("%s", "%s") }',
-                    $status,
-                    $title,
-                    $message
-                )
-            );
+            $this->sendBackendNotification($status, $title, $message);
         }
+    }
+
+    protected function sendBackendNotification(string $status, string $title, string $message): void
+    {
+        GeneralUtility::makeInstance(PageRenderer::class)->loadRequireJsModule(
+            'TYPO3/CMS/Backend/Notification',
+            sprintf(
+                'function(Notification) { Notification.%s("%s", "%s") }',
+                $status,
+                $title,
+                $message
+            )
+        );
     }
 
     protected function getPreviewUrl(int $pageUid): string
@@ -133,10 +147,10 @@ class DataHandlerHook
 
     protected function getUrlForSearchEngineEndpoint(string $url): string
     {
-        return str_replace(
+        $urlForSearchEngine = str_replace(
             [
                 '###URL###',
-                '###API###'
+                '###APIKEY###'
             ],
             [
                 $url,
@@ -144,6 +158,16 @@ class DataHandlerHook
             ],
             $this->extConf->getSearchEngineEndpoint()
         );
+
+        if ($this->extConf->isEnableDebug()) {
+            $this->sendBackendNotification(
+                'info',
+                'Debug URL to searchengine',
+                'URL: ' . $urlForSearchEngine
+            );
+        }
+
+        return $urlForSearchEngine;
     }
 
     /**

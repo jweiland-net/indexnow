@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace JWeiland\IndexNow\Configuration;
 
+use JWeiland\IndexNow\Configuration\Exception\ApiKeyNotAvailableException;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\SingletonInterface;
 
@@ -29,6 +30,11 @@ class ExtConf implements SingletonInterface
      */
     protected $searchEngineEndpoint = '';
 
+    /**
+     * @var bool
+     */
+    protected $enableDebug = false;
+
     public function __construct(ExtensionConfiguration $extensionConfiguration)
     {
         $extConf = $extensionConfiguration->get('indexnow');
@@ -43,8 +49,18 @@ class ExtConf implements SingletonInterface
         }
     }
 
+    /**
+     * @throws ApiKeyNotAvailableException
+     */
     public function getApiKey(): string
     {
+        if ($this->apiKey === '') {
+            throw new ApiKeyNotAvailableException(
+                'API key for indexnow not set in extension settings',
+                1636752398
+            );
+        }
+
         return $this->apiKey;
     }
 
@@ -65,5 +81,15 @@ class ExtConf implements SingletonInterface
     public function setSearchEngineEndpoint(string $searchEngineEndpoint): void
     {
         $this->searchEngineEndpoint = trim($searchEngineEndpoint);
+    }
+
+    public function isEnableDebug(): bool
+    {
+        return $this->enableDebug;
+    }
+
+    public function setEnableDebug(string $enableDebug): void
+    {
+        $this->enableDebug = (bool)$enableDebug;
     }
 }
