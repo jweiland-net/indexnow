@@ -2,3 +2,5 @@
 apiKey =
 # cat=basic; type=string; label=LLL:EXT:indexnow/Resources/Private/Language/ExtConf.xlf:searchEngineEndpoint
 searchEngineEndpoint = https://www.bing.com/indexnow?url=###URL###&key=###APIKEY###
+# cat=basic; type=boolean; label=LLL:EXT:indexnow/Resources/Private/Language/ExtConf.xlf:enableDebug
+enableDebug = 0
