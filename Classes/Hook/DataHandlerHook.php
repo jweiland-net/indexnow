@@ -11,10 +11,10 @@ declare(strict_types=1);
 
 namespace JWeiland\IndexNow\Hook;
 
-use GuzzleHttp\Exception\ClientException;
 use JWeiland\IndexNow\Configuration\Exception\ApiKeyNotAvailableException;
 use JWeiland\IndexNow\Configuration\ExtConf;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
+use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Http\RequestFactory;
 use TYPO3\CMS\Core\Page\PageRenderer;
@@ -31,11 +31,6 @@ class DataHandlerHook
      * @var ExtConf
      */
     protected $extConf;
-
-    /**
-     * @var RequestFactory
-     */
-    protected $requestFactory;
 
     public function __construct(ExtConf $extConf, RequestFactory $requestFactory)
     {
@@ -58,7 +53,7 @@ class DataHandlerHook
                 }
 
                 try {
-                    $this->notifySearchEngine(
+                    $this->storeUrlIntoStack(
                         $this->getUrlForSearchEngineEndpoint(
                             $this->getPreviewUrl($pageUid)
                         )
@@ -69,9 +64,25 @@ class DataHandlerHook
                         'Missing API key',
                         'Please set an API key for EXT:indexnow in extension settings'
                     );
+
+                    break 2;
                 }
             }
         }
+    }
+
+    protected function storeUrlIntoStack(string $url): void
+    {
+        $connection = $this->getConnectionPool()->getConnectionForTable('tx_indexnow_stack');
+        $connection->insert(
+            'tx_indexnow_stack',
+            [
+                'cruser_id' => $GLOBALS['BE_USER']->user['uid'],
+                'tstamp' => time(),
+                'crdate' => time(),
+                'url' => $url
+            ]
+        );
     }
 
     protected function getPageUid(array $record, string $table): int
@@ -82,39 +93,6 @@ class DataHandlerHook
         }
 
         return (int)$pid;
-    }
-
-    protected function notifySearchEngine(string $url): void
-    {
-        if (GeneralUtility::isValidUrl($url)) {
-            $status = 'success';
-            $title = 'Success';
-            $message = 'This page was successfully updated for re-indexing at indexnow.org';
-
-            try {
-                $response = $this->requestFactory->request($url);
-                $statusCode = $response->getStatusCode();
-
-                if ($statusCode !== 200) {
-                    $status = 'warning';
-                    $title = 'Warning';
-                    $message = sprintf(
-                        'Request to indexnow.org results in StatusCode %d with message: %s',
-                        $statusCode,
-                        (string)$response->getBody()
-                    );
-                }
-            } catch (ClientException $e) {
-                $status = 'error';
-                $title = 'Error';
-                $message = sprintf(
-                    'Request to indexnow.org results in Error: %s',
-                    GeneralUtility::quoteJSvalue($e->getMessage())
-                );
-            }
-
-            $this->sendBackendNotification($status, $title, $message);
-        }
     }
 
     protected function sendBackendNotification(string $status, string $title, string $message): void
@@ -193,5 +171,10 @@ class DataHandlerHook
         );
 
         return $record;
+    }
+
+    protected function getConnectionPool(): ConnectionPool
+    {
+        return GeneralUtility::makeInstance(ConnectionPool::class);
     }
 }

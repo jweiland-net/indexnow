@@ -10,3 +10,10 @@ services:
   # Called by makeInstance in TYPO3s DataHandler
   JWeiland\IndexNow\Hook\DataHandlerHook:
     public: true
+
+  # Register commands for indexnow
+  JWeiland\IndexNow\Command\NotifySearchEngineCommand:
+    tags:
+      - name: 'console.command'
+        command: 'indexnow:notify'
+        schedulable: true
