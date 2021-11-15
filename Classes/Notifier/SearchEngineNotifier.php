@@ -9,7 +9,7 @@ declare(strict_types=1);
  * LICENSE file that was distributed with this source code.
  */
 
-namespace JWeiland\IndexNow\Service;
+namespace JWeiland\IndexNow\Notifier;
 
 use GuzzleHttp\Exception\ClientException;
 use Psr\Log\LoggerAwareInterface;
@@ -21,7 +21,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 /*
  * Service to communicate with the search engine
  */
-class SearchEngineService implements LoggerAwareInterface
+class SearchEngineNotifier implements LoggerAwareInterface
 {
     use LoggerAwareTrait;
 
@@ -35,7 +35,7 @@ class SearchEngineService implements LoggerAwareInterface
         $this->requestFactory = $requestFactory;
     }
 
-    public function notifySearchEngine(string $url): bool
+    public function notify(string $url): bool
     {
         $isValidRequest = false;
         if (GeneralUtility::isValidUrl($url)) {
