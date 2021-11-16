@@ -6,6 +6,7 @@ $EM_CONF[$_EXTKEY] = [
     'category' => 'service',
     'author' => 'Stefan Froemken',
     'author_email' => 'sfroemken@jweiland.net',
+    'state' => 'experimental',
     'version' => '0.0.3',
     'constraints' => [
         'depends' => [
