@@ -4,6 +4,7 @@
 	"type": "typo3-cms-extension",
 	"version": "0.0.1",
 	"license": "GPL-2.0-or-later",
+	"homepage": "https://jweiland.net",
 	"authors": [
 		{
 			"name": "Stefan Froemken",
@@ -16,6 +17,9 @@
 	"require-dev": {
 		"roave/security-advisories": "dev-latest",
 		"friendsofphp/php-cs-fixer": "^3.0"
+	},
+	"replace": {
+		"typo3-ter/indexnow": "self.version"
 	},
 	"autoload": {
 		"psr-4": {
