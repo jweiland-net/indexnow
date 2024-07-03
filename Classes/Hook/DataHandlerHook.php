@@ -18,6 +18,7 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Http\RequestFactory;
 use TYPO3\CMS\Core\Page\PageRenderer;
+use TYPO3\CMS\Core\Routing\UnableToLinkToPageException;
 use TYPO3\CMS\Core\Utility\ArrayUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\MathUtility;
@@ -53,10 +54,12 @@ class DataHandlerHook
                 }
 
                 try {
+                    $url = $this->getPreviewUrl($pageUid);
+                    if (null === $url) {
+                        continue;
+                    }
                     $this->storeUrlIntoStack(
-                        $this->getUrlForSearchEngineEndpoint(
-                            $this->getPreviewUrl($pageUid)
-                        )
+                        $this->getUrlForSearchEngineEndpoint($url)
                     );
                 } catch (ApiKeyNotAvailableException $apiKeyNotAvailableException) {
                     $this->sendBackendNotification(
@@ -108,19 +111,25 @@ class DataHandlerHook
         );
     }
 
-    protected function getPreviewUrl(int $pageUid): string
+    protected function getPreviewUrl(int $pageUid): ?string
     {
         $anchorSection = '';
         $additionalParams = '';
 
-        return htmlspecialchars(BackendUtility::getPreviewUrl(
-            $pageUid,
-            '',
-            null,
-            $anchorSection,
-            '',
-            $additionalParams
-        ));
+        try {
+            return htmlspecialchars(
+                BackendUtility::getPreviewUrl(
+                    $pageUid,
+                    '',
+                    null,
+                    $anchorSection,
+                    '',
+                    $additionalParams
+                )
+            );
+        } catch (UnableToLinkToPageException $e) {
+            return null;
+        }
     }
 
     protected function getUrlForSearchEngineEndpoint(string $url): string
