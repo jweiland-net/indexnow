@@ -111,7 +111,11 @@ class DataHandlerHook
             $pageUid = (int)($table === 'pages' ? $recordToBeStored['uid'] : $recordToBeStored['pid']);
         }
 
-        $pageRecord = BackendUtility::getRecord('pages', $pageUid);
+        if ($table === 'pages') {
+            $pageRecord = $recordToBeStored;
+        } else {
+            $pageRecord = BackendUtility::getRecord('pages', $pageUid);
+        }
 
         /** @var ModifyPageUidEvent $modifyPageUidEvent */
         $modifyPageUidEvent = $this->eventDispatcher->dispatch(
