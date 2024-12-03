@@ -9,19 +9,18 @@ declare(strict_types=1);
  * LICENSE file that was distributed with this source code.
  */
 
-namespace JWeiland\IndexNow\Service;
+namespace JWeiland\IndexNow\Notifier;
 
 use GuzzleHttp\Exception\ClientException;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
-use Psr\Log\LogLevel;
 use TYPO3\CMS\Core\Http\RequestFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-/*
+/**
  * Service to communicate with the search engine
  */
-class SearchEngineService implements LoggerAwareInterface
+class SearchEngineNotifier implements LoggerAwareInterface
 {
     use LoggerAwareTrait;
 
@@ -35,7 +34,7 @@ class SearchEngineService implements LoggerAwareInterface
         $this->requestFactory = $requestFactory;
     }
 
-    public function notifySearchEngine(string $url): bool
+    public function notify(string $url): bool
     {
         $isValidRequest = false;
         if (GeneralUtility::isValidUrl($url)) {
@@ -43,21 +42,22 @@ class SearchEngineService implements LoggerAwareInterface
                 $response = $this->requestFactory->request($url);
                 $statusCode = $response->getStatusCode();
 
-                if ($statusCode !== 200) {
-                    $this->logger->log(
-                        LogLevel::WARNING,
+                if ($statusCode === 202) {
+                    $this->logger->info('IndexNow received URL, but IndexNow key validation is still pending');
+                    $isValidRequest = true;
+                } elseif ($statusCode !== 200) {
+                    $this->logger->warning(
                         sprintf(
                             'Request to indexnow.org results in StatusCode %d with message: %s',
                             $statusCode,
-                            (string)$response->getBody()
+                            $response->getBody()
                         )
                     );
                 } else {
                     $isValidRequest = true;
                 }
             } catch (ClientException $e) {
-                $this->logger->log(
-                    LogLevel::ERROR,
+                $this->logger->error(
                     sprintf(
                         'Request to indexnow.org results in Error: %s',
                         GeneralUtility::quoteJSvalue($e->getMessage())

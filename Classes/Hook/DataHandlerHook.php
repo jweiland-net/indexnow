@@ -13,17 +13,18 @@ namespace JWeiland\IndexNow\Hook;
 
 use JWeiland\IndexNow\Configuration\Exception\ApiKeyNotAvailableException;
 use JWeiland\IndexNow\Configuration\ExtConf;
+use JWeiland\IndexNow\Domain\Repository\StackRepository;
+use JWeiland\IndexNow\Event\ModifyPageUidEvent;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
-use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
+use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Http\RequestFactory;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Routing\UnableToLinkToPageException;
 use TYPO3\CMS\Core\Utility\ArrayUtility;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\MathUtility;
 
-/*
+/**
  * Hook into DataHandler to submit a re-index request to indexnow.org
  */
 class DataHandlerHook
@@ -33,10 +34,38 @@ class DataHandlerHook
      */
     protected $extConf;
 
-    public function __construct(ExtConf $extConf, RequestFactory $requestFactory)
-    {
+    /**
+     * @var RequestFactory
+     */
+    protected $requestFactory;
+
+    /**
+     * @var StackRepository
+     */
+    protected $stackRepository;
+
+    /**
+     * @var PageRenderer
+     */
+    protected $pageRenderer;
+
+    /**
+     * @var EventDispatcher
+     */
+    protected $eventDispatcher;
+
+    public function __construct(
+        ExtConf $extConf,
+        RequestFactory $requestFactory,
+        StackRepository $stackRepository,
+        PageRenderer $pageRenderer,
+        EventDispatcher $eventDispatcher
+    ) {
         $this->extConf = $extConf;
         $this->requestFactory = $requestFactory;
+        $this->stackRepository = $stackRepository;
+        $this->pageRenderer = $pageRenderer;
+        $this->eventDispatcher = $eventDispatcher;
     }
 
     public function processDatamap_beforeStart(DataHandler $dataHandler): void
@@ -55,10 +84,11 @@ class DataHandlerHook
 
                 try {
                     $url = $this->getPreviewUrl($pageUid);
-                    if (null === $url) {
+                    if ($url === null) {
                         continue;
                     }
-                    $this->storeUrlIntoStack(
+
+                    $this->stackRepository->insert(
                         $this->getUrlForSearchEngineEndpoint($url)
                     );
                 } catch (ApiKeyNotAvailableException $apiKeyNotAvailableException) {
@@ -74,33 +104,30 @@ class DataHandlerHook
         }
     }
 
-    protected function storeUrlIntoStack(string $url): void
+    protected function getPageUid(array $recordToBeStored, string $table): int
     {
-        $connection = $this->getConnectionPool()->getConnectionForTable('tx_indexnow_stack');
-        $connection->insert(
-            'tx_indexnow_stack',
-            [
-                'cruser_id' => $GLOBALS['BE_USER']->user['uid'],
-                'tstamp' => time(),
-                'crdate' => time(),
-                'url' => $url
-            ]
-        );
-    }
-
-    protected function getPageUid(array $record, string $table): int
-    {
-        $pid = 0;
-        if (array_key_exists('pid', $record)) {
-            $pid = $table === 'pages' ? $record['uid'] : $record['pid'];
+        $pageUid = 0;
+        if (isset($recordToBeStored['uid'], $recordToBeStored['pid'])) {
+            $pageUid = (int)($table === 'pages' ? $recordToBeStored['uid'] : $recordToBeStored['pid']);
         }
 
-        return (int)$pid;
+        if ($table === 'pages') {
+            $pageRecord = $recordToBeStored;
+        } else {
+            $pageRecord = BackendUtility::getRecord('pages', $pageUid);
+        }
+
+        /** @var ModifyPageUidEvent $modifyPageUidEvent */
+        $modifyPageUidEvent = $this->eventDispatcher->dispatch(
+            new ModifyPageUidEvent($recordToBeStored, $table, $pageUid, $pageRecord)
+        );
+
+        return $modifyPageUidEvent->getPageUid();
     }
 
     protected function sendBackendNotification(string $status, string $title, string $message): void
     {
-        GeneralUtility::makeInstance(PageRenderer::class)->loadRequireJsModule(
+        $this->pageRenderer->loadRequireJsModule(
             'TYPO3/CMS/Backend/Notification',
             sprintf(
                 'function(Notification) { Notification.%s("%s", "%s") }',
@@ -163,9 +190,6 @@ class DataHandlerHook
      * Use this method to get a merged record (DB and Request).
      *
      * @param string|int $uid
-     * @param string $table
-     * @param array $recordFromRequest
-     * @return array
      */
     protected function getMergedRecord($uid, string $table, array $recordFromRequest): array
     {
@@ -180,10 +204,5 @@ class DataHandlerHook
         );
 
         return $record;
-    }
-
-    protected function getConnectionPool(): ConnectionPool
-    {
-        return GeneralUtility::makeInstance(ConnectionPool::class);
     }
 }

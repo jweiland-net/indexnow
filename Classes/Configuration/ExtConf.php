@@ -15,7 +15,7 @@ use JWeiland\IndexNow\Configuration\Exception\ApiKeyNotAvailableException;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\SingletonInterface;
 
-/*
+/**
  * This class streamlines all settings from extension manager
  */
 class ExtConf implements SingletonInterface

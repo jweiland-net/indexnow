@@ -2,7 +2,6 @@
 	"name": "jweiland/indexnow",
 	"description": "Site package",
 	"type": "typo3-cms-extension",
-	"version": "0.0.1",
 	"license": "GPL-2.0-or-later",
 	"homepage": "https://jweiland.net",
 	"authors": [
@@ -15,7 +14,6 @@
 		"typo3/cms-core": "^10.4.19 || ^11.5.1"
 	},
 	"require-dev": {
-		"roave/security-advisories": "dev-latest",
 		"friendsofphp/php-cs-fixer": "^3.0"
 	},
 	"replace": {
@@ -27,7 +25,11 @@
 		}
 	},
 	"config": {
-		"vendor-dir": ".build/vendor"
+		"vendor-dir": ".build/vendor",
+		"allow-plugins": {
+			"typo3/class-alias-loader": true,
+			"typo3/cms-composer-installers": true
+		}
 	},
 	"extra": {
 		"typo3/cms": {
