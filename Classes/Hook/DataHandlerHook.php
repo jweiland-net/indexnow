@@ -55,9 +55,10 @@ class DataHandlerHook
 
                 try {
                     $url = $this->getPreviewUrl($pageUid);
-                    if (null === $url) {
+                    if ($url === null) {
                         continue;
                     }
+
                     $this->storeUrlIntoStack(
                         $this->getUrlForSearchEngineEndpoint($url)
                     );
@@ -91,7 +92,7 @@ class DataHandlerHook
     protected function getPageUid(array $record, string $table): int
     {
         $pid = 0;
-        if (array_key_exists('pid', $record)) {
+        if (isset($record['uid'], $record['pid'])) {
             $pid = $table === 'pages' ? $record['uid'] : $record['pid'];
         }
 
