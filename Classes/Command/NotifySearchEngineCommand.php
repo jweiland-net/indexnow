@@ -11,35 +11,42 @@ declare(strict_types=1);
 
 namespace JWeiland\IndexNow\Command;
 
-use JWeiland\IndexNow\Service\SearchEngineService;
+use JWeiland\IndexNow\Domain\Repository\StackRepository;
+use JWeiland\IndexNow\Notifier\SearchEngineNotifier;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Database\Query\QueryBuilder;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-/*
+/**
  * Process records of table tx_indexnow_stack and inform searchengine about modifications via indexnow
  */
-class NotifySearchEngineCommand extends Command
+class NotifySearchEngineCommand extends Command implements LoggerAwareInterface
 {
+    use LoggerAwareTrait;
+
     /**
-     * @var SearchEngineService
+     * @var SearchEngineNotifier
      */
-    protected $searchEngineService;
+    protected $searchEngineNotifier;
+
+    /**
+     * @var StackRepository
+     */
+    protected $stackRepository;
 
     /**
      * Will be called by DI, so please don't add extbase classes with inject methods here.
-     *
-     * @param SearchEngineService $searchEngineService
-     * @param string|null $name
      */
-    public function __construct(SearchEngineService $searchEngineService, string $name = null)
-    {
-        parent::__construct($name);
+    public function __construct(
+        SearchEngineNotifier $searchEngineNotifier,
+        StackRepository $stackRepository
+    ) {
+        parent::__construct();
 
-        $this->searchEngineService = $searchEngineService;
+        $this->searchEngineNotifier = $searchEngineNotifier;
+        $this->stackRepository = $stackRepository;
     }
 
     protected function configure(): void
@@ -52,58 +59,60 @@ class NotifySearchEngineCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $statement = $this->getQueryBuilderForIndexNowStack()->execute();
-
-        while ($urlRecord = $statement->fetch()) {
+        $total = 0;
+        $skipped = 0;
+        $errors = 0;
+        foreach ($this->stackRepository->findAll() as $urlRecord) {
+            $total++;
             $url = trim($urlRecord['url']);
-            if ($url) {
-                if ($this->searchEngineService->notifySearchEngine($url)) {
-                    if ($output->getVerbosity() === OutputInterface::VERBOSITY_DEBUG) {
-                        $output->writeln('Processed URL: ' . $url);
-                    }
-                    $this->deleteRecordFromStack((int)$urlRecord['uid']);
-                } else {
-                    $output->writeln(sprintf(
-                        '<error>URL record with UID %d from stack table could not be processed.</error>',
-                        (int)$urlRecord['uid']
-                    ));
 
-                    return 1;
-                }
-            } else {
-                $this->deleteRecordFromStack((int)$urlRecord['uid']);
+            if ($url === '') {
+                $this->stackRepository->deleteByUid((int)$urlRecord['uid']);
+                $this->logger->info('URL record with empty URL found. Record deleted. Skip.');
                 $output->writeln('<info>URL record with empty URL found. Record deleted. Skip.</info>');
+                $skipped++;
+                continue;
             }
+
+            if ($this->searchEngineNotifier->notify($url)) {
+                if ($output->getVerbosity() === OutputInterface::VERBOSITY_DEBUG) {
+                    $this->logger->debug('Processed URL: ' . $url);
+                    $output->writeln('Processed URL: ' . $url);
+                }
+                $this->stackRepository->deleteByUid((int)$urlRecord['uid']);
+                continue;
+            }
+
+            $this->logger->error(sprintf(
+                'URL record with UID %d from stack table could not be processed.',
+                (int)$urlRecord['uid']
+            ));
+            $output->writeln(sprintf(
+                '<error>URL record with UID %d from stack table could not be processed.</error>',
+                (int)$urlRecord['uid']
+            ));
+            $errors++;
         }
 
-        $output->writeln('All URL records have been notified at search engine');
+        if ($total === 0) {
+            $this->logger->info('No URL records available, nothing sent');
+            $output->writeln('<info>No URL records available, nothing sent</info>');
+            return self::SUCCESS;
+        }
 
-        return 0;
-    }
+        if ($skipped || $errors) {
+            $this->logger->warning(
+                sprintf('<warning>%d URL records have been sent in total, %d were skipped, %d had errors</warning>', $total, $skipped, $errors)
+            );
+            $output->writeln(
+                sprintf('<warning>%d URL records have been sent in total, %d were skipped, %d had errors</warning>', $total, $skipped, $errors)
+            );
+            return self::FAILURE;
+        }
 
-    protected function deleteRecordFromStack(int $uid): void
-    {
-        $connection = $this->getConnectionPool()->getConnectionForTable('tx_indexnow_stack');
-        $connection->delete(
-            'tx_indexnow_stack',
-            [
-                'uid' => $uid
-            ]
-        );
-    }
+        $this->logger->info(sprintf('%d URL records have been sent successfully', $total));
+        $output->writeln(sprintf('<info>%d URL records have been sent successfully</info>', $total));
 
-    protected function getQueryBuilderForIndexNowStack(): QueryBuilder
-    {
-        // No restriction needed as this table does not have any enableFields or deleted columns
-        $queryBuilder = $this->getConnectionPool()->getQueryBuilderForTable('tx_indexnow_stack');
-
-        return $queryBuilder
-            ->select('uid', 'url')
-            ->from('tx_indexnow_stack');
-    }
-
-    protected function getConnectionPool(): connectionPool
-    {
-        return GeneralUtility::makeInstance(ConnectionPool::class);
+        return self::SUCCESS;
     }
 }

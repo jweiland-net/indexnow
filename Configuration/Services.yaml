@@ -11,6 +11,18 @@ services:
   JWeiland\IndexNow\Hook\DataHandlerHook:
     public: true
 
+  querybuilder.tx_indexnow_stack:
+    class: 'TYPO3\CMS\Core\Database\Query\QueryBuilder'
+    factory:
+      - '@TYPO3\CMS\Core\Database\ConnectionPool'
+      - 'getQueryBuilderForTable'
+    arguments:
+      - 'tx_indexnow_stack'
+
+  JWeiland\IndexNow\Domain\Repository\StackRepository:
+    arguments:
+      $queryBuilder: '@querybuilder.tx_indexnow_stack'
+
   # Register commands for indexnow
   JWeiland\IndexNow\Command\NotifySearchEngineCommand:
     tags:
