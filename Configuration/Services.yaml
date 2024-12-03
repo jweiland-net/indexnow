@@ -23,6 +23,11 @@ services:
     arguments:
       $queryBuilder: '@querybuilder.tx_indexnow_stack'
 
+  JWeiland\IndexNow\EventListener\RespectPagesWithNoIndexEventListener:
+    tags:
+      - name: event.listener
+        event: JWeiland\IndexNow\Event\ModifyPageUidEvent
+
   # Register commands for indexnow
   JWeiland\IndexNow\Command\NotifySearchEngineCommand:
     tags:

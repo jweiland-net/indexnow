@@ -14,8 +14,10 @@ namespace JWeiland\IndexNow\Hook;
 use JWeiland\IndexNow\Configuration\Exception\ApiKeyNotAvailableException;
 use JWeiland\IndexNow\Configuration\ExtConf;
 use JWeiland\IndexNow\Domain\Repository\StackRepository;
+use JWeiland\IndexNow\Event\ModifyPageUidEvent;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
+use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Http\RequestFactory;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Routing\UnableToLinkToPageException;
@@ -47,16 +49,23 @@ class DataHandlerHook
      */
     protected $pageRenderer;
 
+    /**
+     * @var EventDispatcher
+     */
+    protected $eventDispatcher;
+
     public function __construct(
         ExtConf $extConf,
         RequestFactory $requestFactory,
         StackRepository $stackRepository,
-        PageRenderer $pageRenderer
+        PageRenderer $pageRenderer,
+        EventDispatcher $eventDispatcher
     ) {
         $this->extConf = $extConf;
         $this->requestFactory = $requestFactory;
         $this->stackRepository = $stackRepository;
         $this->pageRenderer = $pageRenderer;
+        $this->eventDispatcher = $eventDispatcher;
     }
 
     public function processDatamap_beforeStart(DataHandler $dataHandler): void
@@ -95,14 +104,21 @@ class DataHandlerHook
         }
     }
 
-    protected function getPageUid(array $record, string $table): int
+    protected function getPageUid(array $recordToBeStored, string $table): int
     {
-        $pid = 0;
-        if (isset($record['uid'], $record['pid'])) {
-            $pid = $table === 'pages' ? $record['uid'] : $record['pid'];
+        $pageUid = 0;
+        if (isset($recordToBeStored['uid'], $recordToBeStored['pid'])) {
+            $pageUid = (int)($table === 'pages' ? $recordToBeStored['uid'] : $recordToBeStored['pid']);
         }
 
-        return (int)$pid;
+        $pageRecord = BackendUtility::getRecord('pages', $pageUid);
+
+        /** @var ModifyPageUidEvent $modifyPageUidEvent */
+        $modifyPageUidEvent = $this->eventDispatcher->dispatch(
+            new ModifyPageUidEvent($recordToBeStored, $table, $pageUid, $pageRecord)
+        );
+
+        return $modifyPageUidEvent->getPageUid();
     }
 
     protected function sendBackendNotification(string $status, string $title, string $message): void
