@@ -19,9 +19,13 @@ use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Http\RequestFactory;
+use TYPO3\CMS\Core\Messaging\AbstractMessage;
+use TYPO3\CMS\Core\Messaging\FlashMessage;
+use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Routing\UnableToLinkToPageException;
 use TYPO3\CMS\Core\Utility\ArrayUtility;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\MathUtility;
 
 /**
@@ -50,6 +54,11 @@ class DataHandlerHook
     protected $pageRenderer;
 
     /**
+     * @var FlashMessageService
+     */
+    protected $flashMessageService;
+
+    /**
      * @var EventDispatcher
      */
     protected $eventDispatcher;
@@ -59,12 +68,14 @@ class DataHandlerHook
         RequestFactory $requestFactory,
         StackRepository $stackRepository,
         PageRenderer $pageRenderer,
+        FlashMessageService $flashMessageService,
         EventDispatcher $eventDispatcher
     ) {
         $this->extConf = $extConf;
         $this->requestFactory = $requestFactory;
         $this->stackRepository = $stackRepository;
         $this->pageRenderer = $pageRenderer;
+        $this->flashMessageService = $flashMessageService;
         $this->eventDispatcher = $eventDispatcher;
     }
 
@@ -93,9 +104,9 @@ class DataHandlerHook
                     );
                 } catch (ApiKeyNotAvailableException $apiKeyNotAvailableException) {
                     $this->sendBackendNotification(
-                        'error',
                         'Missing API key',
-                        'Please set an API key for EXT:indexnow in extension settings'
+                        'Please set an API key for EXT:indexnow in extension settings',
+                        AbstractMessage::ERROR
                     );
 
                     break 2;
@@ -125,17 +136,21 @@ class DataHandlerHook
         return $modifyPageUidEvent->getPageUid();
     }
 
-    protected function sendBackendNotification(string $status, string $title, string $message): void
-    {
-        $this->pageRenderer->loadRequireJsModule(
-            'TYPO3/CMS/Backend/Notification',
-            sprintf(
-                'function(Notification) { Notification.%s("%s", "%s") }',
-                $status,
-                $title,
-                $message
-            )
+    protected function sendBackendNotification(
+        string $title,
+        string $message,
+        int $severity = AbstractMessage::OK
+    ): void {
+        $flashMessage = GeneralUtility::makeInstance(
+            FlashMessage::class,
+            $message,
+            $title,
+            $severity,
+            true
         );
+
+        $messageQueue = $this->flashMessageService->getMessageQueueByIdentifier();
+        $messageQueue->addMessage($flashMessage);
     }
 
     protected function getPreviewUrl(int $pageUid): ?string
@@ -175,9 +190,9 @@ class DataHandlerHook
 
         if ($this->extConf->isEnableDebug()) {
             $this->sendBackendNotification(
-                'info',
                 'Debug URL to searchengine',
-                'URL: ' . $urlForSearchEngine
+                'URL: ' . $urlForSearchEngine,
+                AbstractMessage::INFO
             );
         }
 
