@@ -2,7 +2,6 @@
 	"name": "jweiland/indexnow",
 	"description": "Site package",
 	"type": "typo3-cms-extension",
-	"version": "0.0.1",
 	"license": "GPL-2.0-or-later",
 	"homepage": "https://jweiland.net",
 	"authors": [
