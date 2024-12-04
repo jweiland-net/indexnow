@@ -1,6 +1,6 @@
 {
 	"name": "jweiland/indexnow",
-	"description": "Site package",
+	"description": "TYPO3 extension to inform various search engines over IndexNow endpoint about content updates",
 	"type": "typo3-cms-extension",
 	"license": "GPL-2.0-or-later",
 	"homepage": "https://jweiland.net",
