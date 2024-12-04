@@ -143,6 +143,27 @@ Check logs for any problems.
 Foreign extensions can hook into extension `indexnow` and prevent informing
 IndexNow under various circumstances.
 
+## For developers
+
+To prevent pages to be sent to IndexNow you can use event `ModifyPageUidEvent`.
+
+Register your own EventListener:
+
+```yaml
+MyVendor\MyExtension\EventListener\DoSomethingEventListener:
+  tags:
+    - name: event.listener
+      event: JWeiland\IndexNow\Event\ModifyPageUidEvent
+```
+
+Set page UID to `0` in event class:
+
+```php
+$modifyPageUidEvent->setPageUid(0);
+```
+
+This will prevent IndexNow to be informed.
+
 <!-- MARKDOWN LINKS & IMAGES -->
 
 [extension-build-shield]: https://poser.pugx.org/jweiland/indexnow/v/stable.svg?style=for-the-badge
