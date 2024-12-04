@@ -81,6 +81,19 @@ Enable Debug Mode
 : While saving records in TYPO3 backend a flash message with the preview URL
 of modified page will be shown.
 
+### Host API Key file
+
+Create a file named `[API key].txt` with your API key as content and move it
+into your document root directory of your website server.
+
+#### Example
+
+If you chose `abc-ABC-123` as your API key you have to create a file named
+`abc-ABC-123.txt` and set `abc-ABC-123` as content of that file. Upload file
+`abc-ABC-123.txt` into the `/var/www/my-typo3-page/public` folder. Open
+`https://example.com/abc-ABC-123.txt` to make sure the file is public
+available and its content is `abc-ABC-123`.
+
 ### Task
 
 You need TYPO3 system extension `scheduler`.
@@ -128,8 +141,8 @@ The IndexNow provider will use your API key and request the file:
 [API key].txt
 ```
 
-with API key as content from your server. If it does not exist, validation fails
-and search engines will provide updated information much later.
+with API key as content from your server. If it does not exist, validation
+fails and search engines will provide updated information much later.
 
 ### I have changed content, but there is no record in `tx_indexnow_stack`
 
@@ -142,6 +155,39 @@ Check logs for any problems.
 
 Foreign extensions can hook into extension `indexnow` and prevent informing
 IndexNow under various circumstances.
+
+### How can I test, if IndexNow works as expected?
+
+In documentation of [Bing IndexNow getting started](https://www.bing.com/indexnow/getstarted) I found following information:
+
+Use [Bing Webmaster Tools](https://www.bing.com/webmasters) to verify if
+your URLs are received by search engines.
+
+## For developers
+
+To prevent pages to be sent to IndexNow you can use event `ModifyPageUidEvent`.
+
+Register your own EventListener:
+
+```yaml
+MyVendor\MyExtension\EventListener\DoSomethingEventListener:
+  tags:
+    - name: event.listener
+      event: JWeiland\IndexNow\Event\ModifyPageUidEvent
+```
+
+Set page UID to `0` in event class:
+
+```php
+$modifyPageUidEvent->setPageUid(0);
+```
+
+This will prevent IndexNow to be informed.
+
+## ToDo
+
+There is a possibility to send ~10.000 update links in just one request. That
+would be much better than sending each URL one by one.
 
 <!-- MARKDOWN LINKS & IMAGES -->
 
