@@ -141,8 +141,8 @@ The IndexNow provider will use your API key and request the file:
 [API key].txt
 ```
 
-with API key as content from your server. If it does not exist, validation fails
-and search engines will provide updated information much later.
+with API key as content from your server. If it does not exist, validation
+fails and search engines will provide updated information much later.
 
 ### I have changed content, but there is no record in `tx_indexnow_stack`
 
@@ -155,6 +155,13 @@ Check logs for any problems.
 
 Foreign extensions can hook into extension `indexnow` and prevent informing
 IndexNow under various circumstances.
+
+### How can I test, if IndexNow works as expected?
+
+In documentation of [Bing IndexNow getting started](https://www.bing.com/indexnow/getstarted) I found following information:
+
+Use [Bing Webmaster Tools](https://www.bing.com/webmasters) to verify if
+your URLs are received by search engines.
 
 ## For developers
 
