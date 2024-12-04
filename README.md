@@ -208,20 +208,3 @@ would be much better than sending each URL one by one.
 [TYPO3-shield]: https://img.shields.io/badge/TYPO3-12.4-green.svg?style=for-the-badge&logo=typo3
 
 [LICENSE_BADGE]: https://img.shields.io/github/license/jweiland-net/indexnow?label=license&style=for-the-badge
-
-
-
-
-
-
-
-
-
-# TYPO3 Extension `indexnow`
-
-TYPO3 extension to inform a search engine about modified content and to
-speed up reindexing. For now Bing is used as default endpoint, which itself
-shares this information with Yandex and other participating search engines.
-
-The [IndexNow](https://www.indexnow.org/) specification is used for this purpose.
-
