@@ -32,52 +32,16 @@ use TYPO3\CMS\Core\Utility\MathUtility;
 /**
  * Hook into DataHandler to submit a re-index request to indexnow.org
  */
-class DataHandlerHook
+readonly class DataHandlerHook
 {
-    /**
-     * @var ExtConf
-     */
-    protected $extConf;
-
-    /**
-     * @var RequestFactory
-     */
-    protected $requestFactory;
-
-    /**
-     * @var StackRepository
-     */
-    protected $stackRepository;
-
-    /**
-     * @var PageRenderer
-     */
-    protected $pageRenderer;
-
-    /**
-     * @var FlashMessageService
-     */
-    protected $flashMessageService;
-
-    /**
-     * @var EventDispatcher
-     */
-    protected $eventDispatcher;
-
     public function __construct(
-        ExtConf $extConf,
-        RequestFactory $requestFactory,
-        StackRepository $stackRepository,
-        PageRenderer $pageRenderer,
-        FlashMessageService $flashMessageService,
-        EventDispatcher $eventDispatcher
+        protected ExtConf $extConf,
+        protected RequestFactory $requestFactory,
+        protected StackRepository $stackRepository,
+        protected PageRenderer $pageRenderer,
+        protected FlashMessageService $flashMessageService,
+        protected EventDispatcher $eventDispatcher
     ) {
-        $this->extConf = $extConf;
-        $this->requestFactory = $requestFactory;
-        $this->stackRepository = $stackRepository;
-        $this->pageRenderer = $pageRenderer;
-        $this->flashMessageService = $flashMessageService;
-        $this->eventDispatcher = $eventDispatcher;
     }
 
     public function processDatamap_beforeStart(DataHandler $dataHandler): void

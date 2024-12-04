@@ -26,11 +26,4 @@ services:
   JWeiland\IndexNow\EventListener\RespectPagesWithNoIndexEventListener:
     tags:
       - name: event.listener
-        event: JWeiland\IndexNow\Event\ModifyPageUidEvent
-
-  # Register commands for indexnow
-  JWeiland\IndexNow\Command\NotifySearchEngineCommand:
-    tags:
-      - name: 'console.command'
-        command: 'indexnow:notify'
-        schedulable: true
+        identifier: 'respectPagesWithNoIndexEventListener'

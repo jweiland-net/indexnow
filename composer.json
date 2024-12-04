@@ -14,7 +14,8 @@
 		"typo3/cms-core": "^12.4.15"
 	},
 	"require-dev": {
-		"friendsofphp/php-cs-fixer": "^3.0"
+		"typo3/coding-standards": "^0.8",
+		"typo3/testing-framework": "^8.2"
 	},
 	"replace": {
 		"typo3-ter/indexnow": "self.version"
@@ -25,7 +26,8 @@
 		}
 	},
 	"config": {
-		"vendor-dir": ".build/vendor",
+		"vendor-dir": ".Build/vendor",
+		"bin-dir": ".Build/bin",
 		"allow-plugins": {
 			"typo3/class-alias-loader": true,
 			"typo3/cms-composer-installers": true
@@ -34,20 +36,8 @@
 	"extra": {
 		"typo3/cms": {
 			"extension-key": "indexnow",
-			"app-dir": ".build",
-			"web-dir": ".build/public"
+			"app-dir": ".Build",
+			"web-dir": ".Build/Web"
 		}
-	},
-	"scripts": {
-		"php:fix": ".build/vendor/bin/php-cs-fixer --config=Build/.php_cs.php fix Classes",
-		"ci:php:lint": "find *.php Classes Configuration -name '*.php' -print0 | xargs -0 -n 1 -P 4 php -l",
-		"ci:php:fixer": ".build/vendor/bin/php-cs-fixer --config=Build/.php_cs.php fix --dry-run -v --diff --show-progress=dots Classes",
-		"link-extension": [
-			"@php -r 'is_dir($extFolder=__DIR__.\"/.build/public/typo3conf/ext/\") || mkdir($extFolder, 0777, true);'",
-			"@php -r 'file_exists($extFolder=__DIR__.\"/.build/public/typo3conf/ext/indexnow\") || symlink(__DIR__,$extFolder);'"
-		],
-		"post-autoload-dump": [
-			"@link-extension"
-		]
 	}
 }

@@ -16,18 +16,13 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 /**
  * Repository to collect records from table "tx_indexnow_stack"
  */
-class StackRepository
+readonly class StackRepository
 {
     private const TABLE_NAME = 'tx_indexnow_stack';
 
-    /**
-     * @var QueryBuilder
-     */
-    private $queryBuilder;
-
-    public function __construct(QueryBuilder $queryBuilder)
-    {
-        $this->queryBuilder = $queryBuilder;
+    public function __construct(
+        protected QueryBuilder $queryBuilder
+    ) {
     }
 
     public function findAll(): iterable

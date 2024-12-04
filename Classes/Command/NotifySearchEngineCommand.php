@@ -13,8 +13,8 @@ namespace JWeiland\IndexNow\Command;
 
 use JWeiland\IndexNow\Domain\Repository\StackRepository;
 use JWeiland\IndexNow\Notifier\SearchEngineNotifier;
-use Psr\Log\LoggerAwareInterface;
-use Psr\Log\LoggerAwareTrait;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -22,39 +22,21 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Process records of table tx_indexnow_stack and inform searchengine about modifications via indexnow
  */
-class NotifySearchEngineCommand extends Command implements LoggerAwareInterface
+#[AsCommand(
+    name: 'indexnow:notify',
+    description: 'Process records of table tx_indexnow_stack and inform searchengine about modifications via indexnow.'
+)]
+class NotifySearchEngineCommand extends Command
 {
-    use LoggerAwareTrait;
-
-    /**
-     * @var SearchEngineNotifier
-     */
-    protected $searchEngineNotifier;
-
-    /**
-     * @var StackRepository
-     */
-    protected $stackRepository;
-
     /**
      * Will be called by DI, so please don't add extbase classes with inject methods here.
      */
     public function __construct(
-        SearchEngineNotifier $searchEngineNotifier,
-        StackRepository $stackRepository
+        readonly protected SearchEngineNotifier $searchEngineNotifier,
+        readonly protected StackRepository $stackRepository,
+        readonly protected LoggerInterface $logger,
     ) {
         parent::__construct();
-
-        $this->searchEngineNotifier = $searchEngineNotifier;
-        $this->stackRepository = $stackRepository;
-    }
-
-    protected function configure(): void
-    {
-        $this->setDescription(
-            'Process records of table tx_indexnow_stack and inform searchengine about modifications via ' .
-            'indexnow.'
-        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
