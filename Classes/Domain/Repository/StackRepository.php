@@ -22,8 +22,7 @@ readonly class StackRepository
 
     public function __construct(
         protected QueryBuilder $queryBuilder
-    ) {
-    }
+    ) {}
 
     public function findAll(): iterable
     {
@@ -58,7 +57,7 @@ readonly class StackRepository
             [
                 'tstamp' => time(),
                 'crdate' => time(),
-                'url' => $url
+                'url' => $url,
             ]
         );
     }

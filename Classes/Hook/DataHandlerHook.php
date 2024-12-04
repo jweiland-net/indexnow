@@ -11,11 +11,11 @@ declare(strict_types=1);
 
 namespace JWeiland\IndexNow\Hook;
 
-use TYPO3\CMS\Backend\Routing\PreviewUriBuilder;
 use JWeiland\IndexNow\Configuration\Exception\ApiKeyNotAvailableException;
 use JWeiland\IndexNow\Configuration\ExtConf;
 use JWeiland\IndexNow\Domain\Repository\StackRepository;
 use JWeiland\IndexNow\Event\ModifyPageUidEvent;
+use TYPO3\CMS\Backend\Routing\PreviewUriBuilder;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
@@ -41,8 +41,7 @@ readonly class DataHandlerHook
         protected PageRenderer $pageRenderer,
         protected FlashMessageService $flashMessageService,
         protected EventDispatcher $eventDispatcher
-    ) {
-    }
+    ) {}
 
     public function processDatamap_beforeStart(DataHandler $dataHandler): void
     {
@@ -125,7 +124,7 @@ readonly class DataHandlerHook
 
         try {
             return htmlspecialchars(
-                (string) PreviewUriBuilder::create($pageUid)->withRootLine(null)->withSection($anchorSection)->withAdditionalQueryParameters($additionalParams)->buildUri()
+                (string)PreviewUriBuilder::create($pageUid)->withRootLine(null)->withSection($anchorSection)->withAdditionalQueryParameters($additionalParams)->buildUri()
             );
         } catch (UnableToLinkToPageException $e) {
             return null;
@@ -137,11 +136,11 @@ readonly class DataHandlerHook
         $urlForSearchEngine = str_replace(
             [
                 '###URL###',
-                '###APIKEY###'
+                '###APIKEY###',
             ],
             [
                 $url,
-                $this->extConf->getApiKey()
+                $this->extConf->getApiKey(),
             ],
             $this->extConf->getSearchEngineEndpoint()
         );

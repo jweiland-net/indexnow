@@ -24,8 +24,7 @@ readonly class SearchEngineNotifier
     public function __construct(
         protected RequestFactory $requestFactory,
         protected LoggerInterface $logger
-    ) {
-    }
+    ) {}
 
     public function notify(string $url): bool
     {
