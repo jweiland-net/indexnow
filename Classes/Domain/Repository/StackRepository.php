@@ -35,9 +35,9 @@ class StackRepository
         $statement = $this->queryBuilder
             ->select('uid', 'url')
             ->from(self::TABLE_NAME)
-            ->execute();
+            ->executeQuery();
 
-        while ($urlRecord = $statement->fetch()) {
+        while ($urlRecord = $statement->fetchAssociative()) {
             yield $urlRecord;
         }
     }
@@ -52,7 +52,7 @@ class StackRepository
                     $this->queryBuilder->createNamedParameter($uid, \PDO::PARAM_INT)
                 )
             )
-            ->execute();
+            ->executeStatement();
     }
 
     public function insert(string $url): void
@@ -61,7 +61,6 @@ class StackRepository
         $connection->insert(
             self::TABLE_NAME,
             [
-                'cruser_id' => $GLOBALS['BE_USER']->user['uid'],
                 'tstamp' => time(),
                 'crdate' => time(),
                 'url' => $url

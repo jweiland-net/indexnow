@@ -5,7 +5,6 @@ return [
         'label' => 'url',
         'tstamp' => 'tstamp',
         'crdate' => 'crdate',
-        'cruser_id' => 'cruser_id',
         'hideTable' => true,
     ],
     'types' => [
@@ -13,12 +12,6 @@ return [
     ],
     'palettes' => [],
     'columns' => [
-        'cruser_id' => [
-            'label' => 'cruser_id',
-            'config' => [
-                'type' => 'passthrough'
-            ]
-        ],
         'crdate' => [
             'label' => 'crdate',
             'config' => [

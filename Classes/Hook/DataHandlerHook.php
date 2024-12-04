@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace JWeiland\IndexNow\Hook;
 
+use TYPO3\CMS\Backend\Routing\PreviewUriBuilder;
 use JWeiland\IndexNow\Configuration\Exception\ApiKeyNotAvailableException;
 use JWeiland\IndexNow\Configuration\ExtConf;
 use JWeiland\IndexNow\Domain\Repository\StackRepository;
@@ -160,14 +161,7 @@ class DataHandlerHook
 
         try {
             return htmlspecialchars(
-                BackendUtility::getPreviewUrl(
-                    $pageUid,
-                    '',
-                    null,
-                    $anchorSection,
-                    '',
-                    $additionalParams
-                )
+                (string) PreviewUriBuilder::create($pageUid)->withRootLine(null)->withSection($anchorSection)->withAdditionalQueryParameters($additionalParams)->buildUri()
             );
         } catch (UnableToLinkToPageException $e) {
             return null;
