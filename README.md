@@ -184,6 +184,14 @@ $modifyPageUidEvent->setPageUid(0);
 
 This will prevent IndexNow to be informed.
 
+## Missing version tags
+
+I had to remove the tags `0.0.2` and `0.0.3` as these versions contain
+a different version in `composer.json` which related to error
+notifications at Packagist. You can still download these
+versions from TYPO3 TER or use version `0.0.4` which solves
+that issue.
+
 ## ToDo
 
 There is a possibility to send ~10.000 update links in just one request. That
