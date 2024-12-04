@@ -20,11 +20,11 @@ use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Http\RequestFactory;
-use TYPO3\CMS\Core\Messaging\AbstractMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Routing\UnableToLinkToPageException;
+use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\ArrayUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\MathUtility;
@@ -70,7 +70,7 @@ readonly class DataHandlerHook
                     $this->sendBackendNotification(
                         'Missing API key',
                         'Please set an API key for EXT:indexnow in extension settings',
-                        AbstractMessage::ERROR
+                        ContextualFeedbackSeverity::ERROR
                     );
 
                     break 2;
@@ -103,7 +103,7 @@ readonly class DataHandlerHook
     protected function sendBackendNotification(
         string $title,
         string $message,
-        int $severity = AbstractMessage::OK
+        ContextualFeedbackSeverity $severity = ContextualFeedbackSeverity::OK
     ): void {
         $flashMessage = GeneralUtility::makeInstance(
             FlashMessage::class,
@@ -149,7 +149,7 @@ readonly class DataHandlerHook
             $this->sendBackendNotification(
                 'Debug URL to searchengine',
                 'URL: ' . $urlForSearchEngine,
-                AbstractMessage::INFO
+                ContextualFeedbackSeverity::INFO
             );
         }
 
