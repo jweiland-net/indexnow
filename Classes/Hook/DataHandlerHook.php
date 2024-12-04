@@ -124,7 +124,10 @@ readonly class DataHandlerHook
 
         try {
             return htmlspecialchars(
-                (string)PreviewUriBuilder::create($pageUid)->withRootLine(null)->withSection($anchorSection)->withAdditionalQueryParameters($additionalParams)->buildUri()
+                (string)PreviewUriBuilder::create($pageUid)
+                    ->withSection($anchorSection)
+                    ->withAdditionalQueryParameters($additionalParams)
+                    ->buildUri()
             );
         } catch (UnableToLinkToPageException $e) {
             return null;
