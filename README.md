@@ -81,6 +81,19 @@ Enable Debug Mode
 : While saving records in TYPO3 backend a flash message with the preview URL
 of modified page will be shown.
 
+### Host API Key file
+
+Create a file named `[API key].txt` with your API key as content and move it
+into your document root directory of your website server.
+
+#### Example
+
+If you chose `abc-ABC-123` as your API key you have to create a file named
+`abc-ABC-123.txt` and set `abc-ABC-123` as content of that file. Upload file
+`abc-ABC-123.txt` into the `/var/www/my-typo3-page/public` folder. Open
+`https://example.com/abc-ABC-123.txt` to make sure the file is public
+available and its content is `abc-ABC-123`.
+
 ### Task
 
 You need TYPO3 system extension `scheduler`.
