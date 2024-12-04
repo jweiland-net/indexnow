@@ -177,6 +177,11 @@ $modifyPageUidEvent->setPageUid(0);
 
 This will prevent IndexNow to be informed.
 
+## ToDo
+
+There is a possibility to send ~10.000 update links in just one request. That
+would be much better than sending each URL one by one.
+
 <!-- MARKDOWN LINKS & IMAGES -->
 
 [extension-build-shield]: https://poser.pugx.org/jweiland/indexnow/v/stable.svg?style=for-the-badge
