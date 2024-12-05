@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace JWeiland\IndexNow\Domain\Repository;
 
+use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
 /**
@@ -43,7 +44,7 @@ class StackRepository
             ->where(
                 $this->queryBuilder->expr()->eq(
                     'uid',
-                    $this->queryBuilder->createNamedParameter($uid, \PDO::PARAM_INT)
+                    $this->queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)
                 )
             )
             ->executeStatement();

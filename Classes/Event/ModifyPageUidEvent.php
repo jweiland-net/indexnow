@@ -17,27 +17,18 @@ namespace JWeiland\IndexNow\Event;
  */
 class ModifyPageUidEvent
 {
-    private array $record;
-
-    private string $table;
-
-    private int $pageUid;
-
-    private ?array $pageRecord;
-
     /**
      * @param array $record This is the record, which is requested to be stored. Coming from DataHandler.
      * @param string $table This is the table name where the record will be stored
      * @param int $pageUid This is the page UID. We will use it to create a preview URL for IndexNow request. Set it to 0 to prevent informing IndexNow.
      * @param array|null $pageRecord To keep your life easy we provide you the full page record. Be careful, in rare cases it can be NULL!
      */
-    public function __construct(array $record, string $table, int $pageUid, ?array $pageRecord)
-    {
-        $this->record = $record;
-        $this->table = $table;
-        $this->pageUid = $pageUid;
-        $this->pageRecord = $pageRecord;
-    }
+    public function __construct(
+        private readonly array $record,
+        private readonly string $table,
+        private int $pageUid,
+        private readonly ?array $pageRecord
+    ) {}
 
     public function getRecord(): array
     {
