@@ -197,6 +197,19 @@ that issue.
 There is a possibility to send ~10.000 update links in just one request. That
 would be much better than sending each URL one by one.
 
+Delete all records from `tx_indexnow_stack` for a specific page on
+delete (DataHandler).
+
+Creating a new page or content element should call the IndexNow services.
+Currently, only modified pages and content elements will be processed. We
+should use the afterAllDatabaseOperations DataHandler hook instead.
+
+Before inserting the URL to `tx_indexnow_stack` we should check for
+already existing records to prevent duplicates.
+
+Nice to have: Add a section into EXT:reports, if file with API key is
+available.
+
 <!-- MARKDOWN LINKS & IMAGES -->
 
 [extension-build-shield]: https://poser.pugx.org/jweiland/indexnow/v/stable.svg?style=for-the-badge

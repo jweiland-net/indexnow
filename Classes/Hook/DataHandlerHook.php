@@ -15,15 +15,16 @@ use JWeiland\IndexNow\Configuration\Exception\ApiKeyNotAvailableException;
 use JWeiland\IndexNow\Configuration\ExtConf;
 use JWeiland\IndexNow\Domain\Repository\StackRepository;
 use JWeiland\IndexNow\Event\ModifyPageUidEvent;
+use TYPO3\CMS\Backend\Routing\PreviewUriBuilder;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Http\RequestFactory;
-use TYPO3\CMS\Core\Messaging\AbstractMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Routing\UnableToLinkToPageException;
+use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\ArrayUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\MathUtility;
@@ -33,51 +34,14 @@ use TYPO3\CMS\Core\Utility\MathUtility;
  */
 class DataHandlerHook
 {
-    /**
-     * @var ExtConf
-     */
-    protected $extConf;
-
-    /**
-     * @var RequestFactory
-     */
-    protected $requestFactory;
-
-    /**
-     * @var StackRepository
-     */
-    protected $stackRepository;
-
-    /**
-     * @var PageRenderer
-     */
-    protected $pageRenderer;
-
-    /**
-     * @var FlashMessageService
-     */
-    protected $flashMessageService;
-
-    /**
-     * @var EventDispatcher
-     */
-    protected $eventDispatcher;
-
     public function __construct(
-        ExtConf $extConf,
-        RequestFactory $requestFactory,
-        StackRepository $stackRepository,
-        PageRenderer $pageRenderer,
-        FlashMessageService $flashMessageService,
-        EventDispatcher $eventDispatcher
-    ) {
-        $this->extConf = $extConf;
-        $this->requestFactory = $requestFactory;
-        $this->stackRepository = $stackRepository;
-        $this->pageRenderer = $pageRenderer;
-        $this->flashMessageService = $flashMessageService;
-        $this->eventDispatcher = $eventDispatcher;
-    }
+        protected ExtConf $extConf,
+        protected RequestFactory $requestFactory,
+        protected StackRepository $stackRepository,
+        protected PageRenderer $pageRenderer,
+        protected FlashMessageService $flashMessageService,
+        protected EventDispatcher $eventDispatcher
+    ) {}
 
     public function processDatamap_beforeStart(DataHandler $dataHandler): void
     {
@@ -106,7 +70,7 @@ class DataHandlerHook
                     $this->sendBackendNotification(
                         'Missing API key',
                         'Please set an API key for EXT:indexnow in extension settings',
-                        AbstractMessage::ERROR
+                        ContextualFeedbackSeverity::ERROR
                     );
 
                     break 2;
@@ -139,7 +103,7 @@ class DataHandlerHook
     protected function sendBackendNotification(
         string $title,
         string $message,
-        int $severity = AbstractMessage::OK
+        ContextualFeedbackSeverity $severity = ContextualFeedbackSeverity::OK
     ): void {
         $flashMessage = GeneralUtility::makeInstance(
             FlashMessage::class,
@@ -160,14 +124,10 @@ class DataHandlerHook
 
         try {
             return htmlspecialchars(
-                BackendUtility::getPreviewUrl(
-                    $pageUid,
-                    '',
-                    null,
-                    $anchorSection,
-                    '',
-                    $additionalParams
-                )
+                (string)PreviewUriBuilder::create($pageUid)
+                    ->withSection($anchorSection)
+                    ->withAdditionalQueryParameters($additionalParams)
+                    ->buildUri()
             );
         } catch (UnableToLinkToPageException $e) {
             return null;
@@ -179,11 +139,11 @@ class DataHandlerHook
         $urlForSearchEngine = str_replace(
             [
                 '###URL###',
-                '###APIKEY###'
+                '###APIKEY###',
             ],
             [
                 $url,
-                $this->extConf->getApiKey()
+                $this->extConf->getApiKey(),
             ],
             $this->extConf->getSearchEngineEndpoint()
         );
@@ -192,7 +152,7 @@ class DataHandlerHook
             $this->sendBackendNotification(
                 'Debug URL to searchengine',
                 'URL: ' . $urlForSearchEngine,
-                AbstractMessage::INFO
+                ContextualFeedbackSeverity::INFO
             );
         }
 

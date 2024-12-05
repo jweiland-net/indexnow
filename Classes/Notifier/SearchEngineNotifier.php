@@ -12,27 +12,19 @@ declare(strict_types=1);
 namespace JWeiland\IndexNow\Notifier;
 
 use GuzzleHttp\Exception\ClientException;
-use Psr\Log\LoggerAwareInterface;
-use Psr\Log\LoggerAwareTrait;
+use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Http\RequestFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * Service to communicate with the search engine
  */
-class SearchEngineNotifier implements LoggerAwareInterface
+class SearchEngineNotifier
 {
-    use LoggerAwareTrait;
-
-    /**
-     * @var RequestFactory
-     */
-    protected $requestFactory;
-
-    public function __construct(RequestFactory $requestFactory)
-    {
-        $this->requestFactory = $requestFactory;
-    }
+    public function __construct(
+        protected RequestFactory $requestFactory,
+        protected LoggerInterface $logger
+    ) {}
 
     public function notify(string $url): bool
     {

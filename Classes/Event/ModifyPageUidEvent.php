@@ -17,25 +17,13 @@ namespace JWeiland\IndexNow\Event;
  */
 class ModifyPageUidEvent
 {
-    /**
-     * @var array
-     */
-    private $record;
+    private array $record;
 
-    /**
-     * @var string
-     */
-    private $table;
+    private string $table;
 
-    /**
-     * @var int
-     */
-    private $pageUid;
+    private int $pageUid;
 
-    /**
-     * @var array|null
-     */
-    private $pageRecord;
+    private ?array $pageRecord;
 
     /**
      * @param array $record This is the record, which is requested to be stored. Coming from DataHandler.

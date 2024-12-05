@@ -20,20 +20,11 @@ use TYPO3\CMS\Core\SingletonInterface;
  */
 class ExtConf implements SingletonInterface
 {
-    /**
-     * @var string
-     */
-    protected $apiKey = '';
+    protected string $apiKey = '';
 
-    /**
-     * @var string
-     */
-    protected $searchEngineEndpoint = '';
+    protected string $searchEngineEndpoint = '';
 
-    /**
-     * @var bool
-     */
-    protected $enableDebug = false;
+    protected bool $enableDebug = false;
 
     public function __construct(ExtensionConfiguration $extensionConfiguration)
     {
