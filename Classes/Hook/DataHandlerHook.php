@@ -32,7 +32,7 @@ use TYPO3\CMS\Core\Utility\MathUtility;
 /**
  * Hook into DataHandler to submit a re-index request to indexnow.org
  */
-readonly class DataHandlerHook
+class DataHandlerHook
 {
     public function __construct(
         protected ExtConf $extConf,

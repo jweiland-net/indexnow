@@ -16,7 +16,7 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 /**
  * Repository to collect records from table "tx_indexnow_stack"
  */
-readonly class StackRepository
+class StackRepository
 {
     private const TABLE_NAME = 'tx_indexnow_stack';
 

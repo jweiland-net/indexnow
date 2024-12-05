@@ -32,9 +32,9 @@ class NotifySearchEngineCommand extends Command
      * Will be called by DI, so please don't add extbase classes with inject methods here.
      */
     public function __construct(
-        readonly protected SearchEngineNotifier $searchEngineNotifier,
-        readonly protected StackRepository $stackRepository,
-        readonly protected LoggerInterface $logger,
+        protected SearchEngineNotifier $searchEngineNotifier,
+        protected StackRepository $stackRepository,
+        protected LoggerInterface $logger,
     ) {
         parent::__construct();
     }

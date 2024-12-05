@@ -16,7 +16,7 @@ use JWeiland\IndexNow\Event\ModifyPageUidEvent;
 /**
  * Prevent informing IndexNow about pages with activated no_index property.
  */
-readonly class RespectPagesWithNoIndexEventListener
+class RespectPagesWithNoIndexEventListener
 {
     public function __invoke(ModifyPageUidEvent $modifyPageUidEvent): void
     {

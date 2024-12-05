@@ -19,7 +19,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 /**
  * Service to communicate with the search engine
  */
-readonly class SearchEngineNotifier
+class SearchEngineNotifier
 {
     public function __construct(
         protected RequestFactory $requestFactory,
