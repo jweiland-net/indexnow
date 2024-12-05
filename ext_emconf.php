@@ -14,10 +14,10 @@ $EM_CONF[$_EXTKEY] = [
     'author' => 'Stefan Froemken',
     'author_email' => 'sfroemken@jweiland.net',
     'state' => 'experimental',
-    'version' => '0.0.5',
+    'version' => '0.0.6',
     'constraints' => [
         'depends' => [
-            'typo3' => '12.4.15-12.4.99',
+            'typo3' => '12.4.15-13.4.99',
         ],
         'conflicts' => [],
         'suggests' => [],

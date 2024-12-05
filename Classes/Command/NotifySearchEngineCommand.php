@@ -46,7 +46,7 @@ class NotifySearchEngineCommand extends Command
         $errors = 0;
         foreach ($this->stackRepository->findAll() as $urlRecord) {
             $total++;
-            $url = trim($urlRecord['url']);
+            $url = trim($urlRecord['url'] ?? '');
 
             if ($url === '') {
                 $this->stackRepository->deleteByUid((int)$urlRecord['uid']);

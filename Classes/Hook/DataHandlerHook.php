@@ -66,7 +66,7 @@ class DataHandlerHook
                     $this->stackRepository->insert(
                         $this->getUrlForSearchEngineEndpoint($url)
                     );
-                } catch (ApiKeyNotAvailableException $apiKeyNotAvailableException) {
+                } catch (ApiKeyNotAvailableException) {
                     $this->sendBackendNotification(
                         'Missing API key',
                         'Please set an API key for EXT:indexnow in extension settings',
@@ -129,7 +129,7 @@ class DataHandlerHook
                     ->withAdditionalQueryParameters($additionalParams)
                     ->buildUri()
             );
-        } catch (UnableToLinkToPageException $e) {
+        } catch (UnableToLinkToPageException) {
             return null;
         }
     }
