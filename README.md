@@ -80,6 +80,9 @@ Enable Debug Mode
 : While saving records in TYPO3 backend a flash message with the preview URL
 of modified page will be shown.
 
+Notify batch mode
+: If enabled, the search engine will be notified using batch mode. This means that modified URLs are sent in a single request. A maximum of 10,000 URLs can be sent per batch
+
 ### Host API Key file
 
 Create a file named `[API key].txt` with your API key as content and move it
