@@ -53,13 +53,14 @@ class StackRepository
     public function insert(string $url): void
     {
         $connection = $this->queryBuilder->getConnection();
-        $connection->insert(
-            self::TABLE_NAME,
-            [
-                'tstamp' => time(),
-                'crdate' => time(),
-                'url' => $url,
-            ]
-        );
+        $now = time();
+        $sql = 'INSERT INTO ' . self::TABLE_NAME . ' (url, tstamp, crdate, url_hash) ' .
+               'VALUES (:url, :tstamp, :crdate, SHA1(:url)) ' .
+               'ON DUPLICATE KEY UPDATE url_hash = url_hash';
+        $connection->executeStatement($sql, [
+            'url' => $url,
+            'tstamp' => $now,
+            'crdate' => $now,
+        ]);
     }
 }

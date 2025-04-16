@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace JWeiland\IndexNow\Notifier;
 
 use GuzzleHttp\Exception\ClientException;
+use JWeiland\IndexNow\Configuration\ExtConf;
 use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Http\RequestFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -23,7 +24,8 @@ class SearchEngineNotifier
 {
     public function __construct(
         protected RequestFactory $requestFactory,
-        protected LoggerInterface $logger
+        protected LoggerInterface $logger,
+        protected ExtConf $extConf,
     ) {}
 
     public function notify(string $url): bool
@@ -59,5 +61,87 @@ class SearchEngineNotifier
         }
 
         return $isValidRequest;
+    }
+
+    public function notifyBatch(array $urls): bool
+    {
+        if (empty($urls)) {
+            $this->logger->info('No URLs provided for batch notification.');
+            return false;
+        }
+
+        $groupedUrls = [];
+        // domains should be grouped by their host to send them in one batch
+        foreach ($urls as $url) {
+            $host = parse_url($url, PHP_URL_HOST);
+            if (!$host) {
+                $this->logger->warning('Skipping URL with invalid host: ' . $url);
+                continue;
+            }
+            $groupedUrls[$host][] = $url;
+        }
+
+        $overallSuccess = false;
+
+        foreach ($groupedUrls as $domain => $domainUrls) {
+
+            $urlCount = count($domainUrls);
+            $this->logger->info(sprintf('Preparing batch for %s with %d URL(s)', $domain, $urlCount));
+
+            $postData = [
+                'host' => $domain,
+                'key' => $this->extConf->getApiKey(),
+                'keyLocation' => 'https://' . $domain . '/' . $this->extConf->getApiKey() . '.txt',
+                'urlList' => $domainUrls,
+            ];
+
+            if ($urlCount < 2) {
+                $this->logger->info(sprintf('Batch skipped for %s – only one URL. Falling back to single notify.', $domain));
+                foreach ($domainUrls as $url) {
+                    $urlForSearchEngine = str_replace(
+                        [
+                            '###URL###',
+                            '###APIKEY###',
+                        ],
+                        [
+                            $url,
+                            $this->extConf->getApiKey(),
+                        ],
+                        $this->extConf->getSearchEngineEndpoint()
+                    );
+                    $success = $this->notify($urlForSearchEngine);
+                    $overallSuccess = $overallSuccess || $success;
+                }
+                continue;
+            }
+
+            try {
+                $response = $this->requestFactory->request(
+                    'https://www.bing.com/indexnow',
+                    'POST',
+                    [
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode($postData),
+                    ]
+                );
+                $statusCode = $response->getStatusCode();
+                if (in_array($statusCode, [200, 202], true)) {
+                    $this->logger->info(sprintf('Batch IndexNow successful for domain %s: %d URLs sent.', $domain, count($domainUrls)));
+                    $overallSuccess = true;
+                } else {
+                    $this->logger->warning(sprintf(
+                        'Batch IndexNow failed for domain %s with status %d and message: %s',
+                        $domain,
+                        $statusCode,
+                        $response->getBody()
+                    ));
+                }
+            } catch (\Throwable $e) {
+                $this->logger->error('Batch IndexNow error for domain ' . $domain . ': ' . $e->getMessage());
+            }
+        }
+
+        return $overallSuccess;
+
     }
 }

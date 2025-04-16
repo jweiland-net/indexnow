@@ -26,6 +26,8 @@ class ExtConf implements SingletonInterface
 
     protected bool $enableDebug = false;
 
+    protected bool $notifyBatchMode = false;
+
     public function __construct(ExtensionConfiguration $extensionConfiguration)
     {
         $extConf = $extensionConfiguration->get('indexnow');
@@ -83,4 +85,15 @@ class ExtConf implements SingletonInterface
     {
         $this->enableDebug = (bool)$enableDebug;
     }
+
+    public function isNotifyBatchMode(): bool
+    {
+        return (bool)$this->notifyBatchMode;
+    }
+
+    public function setNotifyBatchMode(string $notifyBatchMode): void
+    {
+        $this->notifyBatchMode = (bool)$notifyBatchMode;
+    }
+
 }

@@ -4,3 +4,5 @@ apiKey =
 searchEngineEndpoint = https://www.bing.com/indexnow?url=###URL###&key=###APIKEY###
 # cat=basic; type=boolean; label=LLL:EXT:indexnow/Resources/Private/Language/ExtConf.xlf:enableDebug
 enableDebug = 0
+# cat=basic; type=boolean; label=LLL:EXT:indexnow/Resources/Private/Language/ExtConf.xlf:notifyBatchMode
+notifyBatchMode = 0
