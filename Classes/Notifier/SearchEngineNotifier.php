@@ -66,6 +66,7 @@ class SearchEngineNotifier
     public function notifyBatch(array $urls): bool
     {
         if (empty($urls)) {
+            $this->logger->info('No URLs provided for batch notification.');
             return false;
         }
 
@@ -74,6 +75,7 @@ class SearchEngineNotifier
         foreach ($urls as $url) {
             $host = parse_url($url, PHP_URL_HOST);
             if (!$host) {
+                $this->logger->warning('Skipping URL with invalid host: ' . $url);
                 continue;
             }
             $groupedUrls[$host][] = $url;
@@ -82,12 +84,36 @@ class SearchEngineNotifier
         $overallSuccess = false;
 
         foreach ($groupedUrls as $domain => $domainUrls) {
+
+            $urlCount = count($domainUrls);
+            $this->logger->info(sprintf('Preparing batch for %s with %d URL(s)', $domain, $urlCount));
+
             $postData = [
                 'host' => $domain,
                 'key' => $this->extConf->getApiKey(),
                 'keyLocation' => 'https://' . $domain . '/' . $this->extConf->getApiKey() . '.txt',
                 'urlList' => $domainUrls,
             ];
+
+            if ($urlCount < 2) {
+                $this->logger->info(sprintf('Batch skipped for %s – only one URL. Falling back to single notify.', $domain));
+                foreach ($domainUrls as $url) {
+                    $urlForSearchEngine = str_replace(
+                        [
+                            '###URL###',
+                            '###APIKEY###',
+                        ],
+                        [
+                            $url,
+                            $this->extConf->getApiKey(),
+                        ],
+                        $this->extConf->getSearchEngineEndpoint()
+                    );
+                    $success = $this->notify($urlForSearchEngine);
+                    $overallSuccess = $overallSuccess || $success;
+                }
+                continue;
+            }
 
             try {
                 $response = $this->requestFactory->request(
