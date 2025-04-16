@@ -83,7 +83,7 @@ class SearchEngineNotifier
 
         foreach ($groupedUrls as $domain => $domainUrls) {
             $postData = [
-                'host' => 'https://' . $domain,
+                'host' => $domain,
                 'key' => $this->extConf->getApiKey(),
                 'keyLocation' => 'https://' . $domain . '/' . $this->extConf->getApiKey() . '.txt',
                 'urlList' => $domainUrls,
