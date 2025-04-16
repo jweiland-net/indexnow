@@ -1,3 +1,4 @@
+# a test
 # TYPO3 Extension `indexnow`
 
 [![Packagist][packagist-logo-stable]][extension-packagist-url]
