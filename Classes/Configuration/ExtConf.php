@@ -28,14 +28,12 @@ class ExtConf
     private const DEFAULT_SETTINGS = [
         'apiKey' => '',
         'searchEngineEndpoint' => '',
-        'enableDebug' => false,
         'notifyBatchMode' => false,
     ];
 
     public function __construct(
         private readonly string $apiKey = self::DEFAULT_SETTINGS['apiKey'],
         private readonly string $searchEngineEndpoint = self::DEFAULT_SETTINGS['searchEngineEndpoint'],
-        private readonly bool $enableDebug = self::DEFAULT_SETTINGS['enableDebug'],
         private readonly bool $notifyBatchMode = self::DEFAULT_SETTINGS['notifyBatchMode'],
     ) {}
 
@@ -55,7 +53,6 @@ class ExtConf
         return new self(
             apiKey: (string)$extensionSettings['apiKey'],
             searchEngineEndpoint: (string)$extensionSettings['searchEngineEndpoint'],
-            enableDebug: (bool)$extensionSettings['enableDebug'],
             notifyBatchMode: (bool)$extensionSettings['notifyBatchMode'],
         );
     }
@@ -78,15 +75,10 @@ class ExtConf
     public function getSearchEngineEndpoint(): string
     {
         if ($this->searchEngineEndpoint === '') {
-            return 'https://www.bing.com/indexnow?url=###URL###&key=###APIKEY###';
+            return 'https://www.bing.com/indexnow';
         }
 
         return $this->searchEngineEndpoint;
-    }
-
-    public function isEnableDebug(): bool
-    {
-        return $this->enableDebug;
     }
 
     public function isNotifyBatchMode(): bool
