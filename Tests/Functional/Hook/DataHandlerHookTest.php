@@ -43,7 +43,7 @@ class DataHandlerHookTest extends FunctionalTestCase
             'id' => 0,
             'title' => 'English',
             'locale' => 'en_US.UTF8',
-            'iso' => 'en'
+            'iso' => 'en',
         ],
     ];
 
@@ -63,10 +63,11 @@ class DataHandlerHookTest extends FunctionalTestCase
         ];
 
         $request = new ServerRequest('https://www.example.com/typo3', 'GET');
-        $request = $request->withQueryParams([
-            'overrideVals' => [
-                'pages' => [
-                    'sys_language_uid' => 0,
+        $request = $request->withQueryParams(
+            [
+                'overrideVals' => [
+                    'pages' => [
+                        'sys_language_uid' => 0,
                     ],
                 ],
             ],

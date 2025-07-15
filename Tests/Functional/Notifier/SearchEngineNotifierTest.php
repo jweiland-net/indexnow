@@ -11,11 +11,9 @@ namespace JWeiland\IndexNow\Tests\Functional\Notifier;
 
 use JWeiland\IndexNow\Configuration\ExtConf;
 use JWeiland\IndexNow\Domain\Model\Stack;
-use JWeiland\IndexNow\Domain\Repository\StackRepository;
 use JWeiland\IndexNow\Notifier\SearchEngineNotifier;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
-use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\RequestFactory;
 use TYPO3\CMS\Core\Http\Response;
 use TYPO3\CMS\Core\Log\Logger;
