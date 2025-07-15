@@ -60,8 +60,8 @@ class NotifySearchEngineCommand extends Command
             $this->stackRepository->deleteByUid($stack->getUid());
         }
 
-        $this->logger->info(sprintf('Batch sent (%d URLs), all entries deleted', count($uids)));
-        $output->writeln(sprintf('<info>Batch sent (%d URLs), all entries deleted.</info>', count($uids)));
+        $this->logger->info(sprintf('Batch sent (%d URLs), all entries deleted', $stackStorage->count()));
+        $output->writeln(sprintf('<info>Batch sent (%d URLs), all entries deleted.</info>', $stackStorage->count()));
 
         return self::SUCCESS;
     }
