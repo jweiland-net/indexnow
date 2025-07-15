@@ -13,7 +13,7 @@ namespace JWeiland\IndexNow\Hook;
 
 use JWeiland\IndexNow\Domain\Repository\StackRepository;
 use JWeiland\IndexNow\Event\ModifyPageUidEvent;
-use JWeiland\IndexNow\Notifier\SingleNotificationTrait;
+use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Routing\PreviewUriBuilder;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
@@ -32,8 +32,6 @@ use TYPO3\CMS\Core\Utility\MathUtility;
  */
 class DataHandlerHook
 {
-    use SingleNotificationTrait;
-
     public function __construct(
         protected StackRepository $stackRepository,
         protected PageRenderer $pageRenderer,
@@ -55,7 +53,7 @@ class DataHandlerHook
 
                 // if the table is pages, we need to get sys_language_uid form $request object
                 if ($table === 'pages') {
-                    if (isset($GLOBALS['TYPO3_REQUEST']) && $GLOBALS['TYPO3_REQUEST'] instanceof \Psr\Http\Message\ServerRequestInterface) {
+                    if (isset($GLOBALS['TYPO3_REQUEST']) && $GLOBALS['TYPO3_REQUEST'] instanceof ServerRequestInterface) {
                         $queryParams = $GLOBALS['TYPO3_REQUEST']->getQueryParams();
                         if (isset($queryParams['overrideVals']['pages']['sys_language_uid'])) {
                             $sysLanguageUid = (int)$queryParams['overrideVals']['pages']['sys_language_uid'];
@@ -142,7 +140,7 @@ class DataHandlerHook
 
     /**
      * If NEW, $recordFromRequest will contain nearly all fields.
-     * If updated, $recordFromRequest will only contain modified fields. PID f.e. is missing.
+     * If updated, $recordFromRequest will only contain modified fields. PID f.e. Is missing.
      * Use this method to get a merged record (DB and Request).
      */
     protected function getMergedRecord(int|string $uid, string $table, array $recordFromRequest): array

@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace JWeiland\IndexNow\Domain\Model;
 
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+
 class Stack
 {
     public function __construct(
@@ -34,7 +36,7 @@ class Stack
             return false;
         }
 
-        return filter_var($this->getUrl(), FILTER_VALIDATE_URL);
+        return GeneralUtility::isValidUrl($this->getUrl());
     }
 
     public function getHost(): string
