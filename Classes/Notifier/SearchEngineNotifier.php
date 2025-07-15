@@ -105,18 +105,18 @@ class SearchEngineNotifier
         return $isValidRequest;
     }
 
+    /**
+     * @throws ApiKeyNotAvailableException
+     */
     protected function getUrlForSingleNotification(Stack $stack): string
     {
+        // Do not surround with try-catch. It should break in scheduler/cli
+        // if no API key is available to inform the user visually
         $uri = new Uri($this->extConf->getSearchEngineEndpoint());
-
-        try {
-            $uri = $uri->withQuery(HttpUtility::buildQueryString([
-                'url' => $stack->getUrl(),
-                'key' => $this->extConf->getApiKey(),
-            ]));
-        } catch (ApiKeyNotAvailableException) {
-            return '';
-        }
+        $uri = $uri->withQuery(HttpUtility::buildQueryString([
+            'url' => $stack->getUrl(),
+            'key' => $this->extConf->getApiKey(),
+        ]));
 
         return (string)$uri;
     }
