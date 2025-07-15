@@ -6,6 +6,7 @@ services:
 
   JWeiland\IndexNow\:
     resource: '../Classes/*'
+    exclude: '../Classes/Domain/Model/*'
 
   # Called by makeInstance in TYPO3s DataHandler
   JWeiland\IndexNow\Hook\DataHandlerHook:

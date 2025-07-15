@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 namespace JWeiland\IndexNow\Command;
 
-use JWeiland\IndexNow\Configuration\ExtConf;
+use JWeiland\IndexNow\Domain\Model\Stack;
 use JWeiland\IndexNow\Domain\Repository\StackRepository;
 use JWeiland\IndexNow\Notifier\SearchEngineNotifier;
 use Psr\Log\LoggerInterface;
@@ -35,7 +35,6 @@ class NotifySearchEngineCommand extends Command
     public function __construct(
         protected SearchEngineNotifier $searchEngineNotifier,
         protected StackRepository $stackRepository,
-        protected ExtConf $extConf,
         protected LoggerInterface $logger,
     ) {
         parent::__construct();
@@ -43,106 +42,52 @@ class NotifySearchEngineCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        if ($this->extConf->isNotifyBatchMode()) {
-            $output->writeln('<info>Notify batch mode is enabled.</info>');
-            $this->useNotifyBatchMode($input, $output);
-            return self::SUCCESS;
-        }
+        $stackStorage = $this->getStackStorage($output);
 
-        $total = 0;
-        $skipped = 0;
-        $errors = 0;
-        foreach ($this->stackRepository->findAll() as $urlRecord) {
-            $total++;
-            $url = trim($urlRecord['url'] ?? '');
-
-            if ($url === '') {
-                $this->stackRepository->deleteByUid((int)$urlRecord['uid']);
-                $this->logger->info('URL record with empty URL found. Record deleted. Skip.');
-                $output->writeln('<info>URL record with empty URL found. Record deleted. Skip.</info>');
-                $skipped++;
-                continue;
-            }
-
-            if ($this->searchEngineNotifier->notify($url)) {
-                if ($output->getVerbosity() === OutputInterface::VERBOSITY_DEBUG) {
-                    $this->logger->debug('Processed URL: ' . $url);
-                    $output->writeln('Processed URL: ' . $url);
-                }
-                $this->stackRepository->deleteByUid((int)$urlRecord['uid']);
-                continue;
-            }
-
-            $this->logger->error(sprintf(
-                'URL record with UID %d from stack table could not be processed.',
-                (int)$urlRecord['uid']
-            ));
-            $output->writeln(sprintf(
-                '<error>URL record with UID %d from stack table could not be processed.</error>',
-                (int)$urlRecord['uid']
-            ));
-            $errors++;
-        }
-
-        if ($total === 0) {
-            $this->logger->info('No URL records available, nothing sent');
-            $output->writeln('<info>No URL records available, nothing sent</info>');
-            return self::SUCCESS;
-        }
-
-        if ($skipped || $errors) {
-            $this->logger->warning(
-                sprintf('<warning>%d URL records have been sent in total, %d were skipped, %d had errors</warning>', $total, $skipped, $errors)
-            );
-            $output->writeln(
-                sprintf('<warning>%d URL records have been sent in total, %d were skipped, %d had errors</warning>', $total, $skipped, $errors)
-            );
-            return self::FAILURE;
-        }
-
-        $this->logger->info(sprintf('%d URL records have been sent successfully', $total));
-        $output->writeln(sprintf('<info>%d URL records have been sent successfully</info>', $total));
-
-        return self::SUCCESS;
-    }
-
-    protected function useNotifyBatchMode(InputInterface $input, OutputInterface $output): int
-    {
-        $records = $this->stackRepository->findAll();
-        $urlMap = [];
-        $uids = [];
-
-        foreach ($records as $record) {
-            $url = trim($record['url'] ?? '');
-            if ($url === '') {
-                $this->stackRepository->deleteByUid((int)$record['uid']);
-                $this->logger->info('URL record with empty URL found. Record deleted. Skip.');
-                $output->writeln('<info>URL record with empty URL found. Record deleted. Skip.</info>');
-                continue;
-            }
-            $urlMap[] = $url;
-            $uids[] = (int)$record['uid'];
-        }
-
-        if (empty($urlMap)) {
+        if ($stackStorage->count() === 0) {
             $this->logger->info('No URL records available, nothing sent.');
             $output->writeln('<info>No URL records available, nothing sent.</info>');
             return self::SUCCESS;
         }
 
-        $success = $this->searchEngineNotifier->notifyBatch($urlMap);
-
-        if ($success) {
-            foreach ($uids as $uid) {
-                $this->stackRepository->deleteByUid($uid);
-            }
-            $this->logger->info(sprintf('Batch sent (%d URLs), all entries deleted', count($uids)));
-            $output->writeln(sprintf('<info>Batch sent (%d URLs), all entries deleted.</info>', count($uids)));
-            return self::SUCCESS;
+        if (!$this->searchEngineNotifier->notify($stackStorage)) {
+            $this->logger->error('Batch sending failed, entries remain in stack.');
+            $output->writeln('<error>Batch sending failed, entries remain in stack.</error>');
+            return self::FAILURE;
         }
 
-        $this->logger->error('Batch sending failed, entries remain in stack.');
-        $output->writeln('<error>Batch sending failed, entries remain in stack.</error>');
-        return self::FAILURE;
+        foreach ($stackStorage as $stack) {
+            $this->stackRepository->deleteByUid($stack->getUid());
+        }
+
+        $this->logger->info(sprintf('Batch sent (%d URLs), all entries deleted', count($uids)));
+        $output->writeln(sprintf('<info>Batch sent (%d URLs), all entries deleted.</info>', count($uids)));
+
+        return self::SUCCESS;
+    }
+
+    protected function getStackStorage(OutputInterface $output): \SplObjectStorage
+    {
+        /** @var \SplObjectStorage<Stack> $stackStorage */
+        $stackStorage = new \SplObjectStorage();
+
+        foreach ($this->stackRepository->findAll() as $stack) {
+            if (!$stack->hasValidUrl()) {
+                $this->deleteInvalidStack($stack, $output);
+                continue;
+            }
+
+            $stackStorage->attach($stack);
+        }
+
+        return $stackStorage;
+    }
+
+    protected function deleteInvalidStack(Stack $stack, OutputInterface $output): void
+    {
+        $this->stackRepository->deleteByUid($stack->getUid());
+
+        $this->logger->info('URL record with invalid URL found. Record deleted. Skip.');
+        $output->writeln('<info>URL record with invalid URL found. Record deleted. Skip.</info>');
     }
 }

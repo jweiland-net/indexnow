@@ -12,28 +12,70 @@ declare(strict_types=1);
 namespace JWeiland\IndexNow\Notifier;
 
 use GuzzleHttp\Exception\ClientException;
+use JWeiland\IndexNow\Configuration\Exception\ApiKeyNotAvailableException;
 use JWeiland\IndexNow\Configuration\ExtConf;
+use JWeiland\IndexNow\Domain\Model\Stack;
 use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Http\RequestFactory;
+use TYPO3\CMS\Core\Http\Uri;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Core\Utility\HttpUtility;
 
 /**
  * Service to communicate with the search engine
  */
 class SearchEngineNotifier
 {
+    /**
+     * In batch mode, there is a limit of 10,000 URLs per POST request.
+     */
+    private const MAX_URLS_EACH_REQUEST = 10000;
+
     public function __construct(
         protected RequestFactory $requestFactory,
         protected LoggerInterface $logger,
         protected ExtConf $extConf,
     ) {}
 
-    public function notify(string $url): bool
+    /**
+     * @param \SplObjectStorage<Stack> $stackStorage
+     */
+    public function notify(\SplObjectStorage $stackStorage): bool
+    {
+        if ($stackStorage->count() === 0) {
+            $this->logger->info('No URL records available, nothing sent.');
+            return false;
+        }
+
+        foreach ($this->groupStackByHost($stackStorage) as $host => $stacksGroupedByHost) {
+            $numberOfGroupedStacks = count($stacksGroupedByHost);
+            $this->logger->info(sprintf('Preparing batch for %s with %d URL(s)', $host, $numberOfGroupedStacks));
+
+            if (
+                ($this->extConf->isNotifyBatchMode() && $numberOfGroupedStacks < 2)
+                || !$this->extConf->isNotifyBatchMode()
+            ) {
+                foreach ($stacksGroupedByHost as $stack) {
+                    $this->notifySingleStack($stack);
+                }
+                continue;
+            }
+
+            foreach (array_chunk($stacksGroupedByHost, self::MAX_URLS_EACH_REQUEST) as $chunkedStacksGroupedByHost) {
+                $this->notifyGroupedStacks($chunkedStacksGroupedByHost, $host);
+            }
+        }
+
+        return true;
+    }
+
+    protected function notifySingleStack(Stack $stack): bool
     {
         $isValidRequest = false;
-        if (GeneralUtility::isValidUrl($url)) {
+
+        if ($stack->hasValidUrl()) {
             try {
-                $response = $this->requestFactory->request($url);
+                $response = $this->requestFactory->request($this->getUrlForSingleNotification($stack));
                 $statusCode = $response->getStatusCode();
 
                 if ($statusCode === 202) {
@@ -63,85 +105,104 @@ class SearchEngineNotifier
         return $isValidRequest;
     }
 
-    public function notifyBatch(array $urls): bool
+    protected function getUrlForSingleNotification(Stack $stack): string
     {
-        if (empty($urls)) {
-            $this->logger->info('No URLs provided for batch notification.');
+        $uri = new Uri($this->extConf->getSearchEngineEndpoint());
+
+        try {
+            $uri = $uri->withQuery(HttpUtility::buildQueryString([
+                'url' => $stack->getUrl(),
+                'key' => $this->extConf->getApiKey(),
+            ], '&'));
+        } catch (ApiKeyNotAvailableException) {
+            return '';
+        }
+
+        return (string)$uri;
+    }
+
+    protected function notifyGroupedStacks(array $groupedStacks, string $host): bool
+    {
+        try {
+            $postData = [
+                'host' => $host,
+                'key' => $this->extConf->getApiKey(),
+                'keyLocation' => 'https://' . $host . '/' . $this->extConf->getApiKey() . '.txt',
+                'urlList' => $this->getUrlsFromGroupedStacks($groupedStacks),
+            ];
+        } catch (ApiKeyNotAvailableException) {
             return false;
         }
 
-        $groupedUrls = [];
+        try {
+            $response = $this->requestFactory->request(
+                $this->extConf->getSearchEngineEndpoint(),
+                'POST',
+                [
+                    'headers' => [
+                        'Content-Type' => 'application/json',
+                    ],
+                    'body' => json_encode($postData),
+                ]
+            );
+
+            $statusCode = $response->getStatusCode();
+
+            if (in_array($statusCode, [200, 202], true)) {
+                $this->logger->info(sprintf(
+                    'Batch IndexNow successful for domain %s: %d URLs sent.',
+                    $host,
+                    count($groupedStacks),
+                ));
+                return true;
+            } else {
+                $this->logger->warning(sprintf(
+                    'Batch IndexNow failed for domain %s with status %d and message: %s',
+                    $host,
+                    $statusCode,
+                    $response->getBody()
+                ));
+            }
+        } catch (\Throwable $e) {
+            $this->logger->error('Batch IndexNow error for domain ' . $host . ': ' . $e->getMessage());
+        }
+
+        return false;
+    }
+
+    /**
+     * @param Stack[] $groupedStacks
+     */
+    protected function getUrlsFromGroupedStacks(array $groupedStacks): array
+    {
+        $urls = [];
+
+        foreach ($groupedStacks as $stack) {
+            $urls[] = $stack->getUrl();
+        }
+
+        return $urls;
+    }
+
+    /**
+     * @param \SplObjectStorage<Stack> $stackStorage
+     * @return array<string, array<Stack>>
+     */
+    protected function groupStackByHost(\SplObjectStorage $stackStorage): array
+    {
+        $groupedStacks = [];
+
         // domains should be grouped by their host to send them in one batch
-        foreach ($urls as $url) {
-            $host = parse_url($url, PHP_URL_HOST);
-            if (!$host) {
-                $this->logger->warning('Skipping URL with invalid host: ' . $url);
-                continue;
-            }
-            $groupedUrls[$host][] = $url;
-        }
-
-        $overallSuccess = false;
-
-        foreach ($groupedUrls as $domain => $domainUrls) {
-
-            $urlCount = count($domainUrls);
-            $this->logger->info(sprintf('Preparing batch for %s with %d URL(s)', $domain, $urlCount));
-
-            $postData = [
-                'host' => $domain,
-                'key' => $this->extConf->getApiKey(),
-                'keyLocation' => 'https://' . $domain . '/' . $this->extConf->getApiKey() . '.txt',
-                'urlList' => $domainUrls,
-            ];
-
-            if ($urlCount < 2) {
-                $this->logger->info(sprintf('Batch skipped for %s – only one URL. Falling back to single notify.', $domain));
-                foreach ($domainUrls as $url) {
-                    $urlForSearchEngine = str_replace(
-                        [
-                            '###URL###',
-                            '###APIKEY###',
-                        ],
-                        [
-                            $url,
-                            $this->extConf->getApiKey(),
-                        ],
-                        $this->extConf->getSearchEngineEndpoint()
-                    );
-                    $success = $this->notify($urlForSearchEngine);
-                    $overallSuccess = $overallSuccess || $success;
-                }
+        foreach ($stackStorage as $stack) {
+            $host = $stack->getHost();
+            if ($host === '') {
+                $this->logger->warning('Skipping URL with invalid host: ' . $stack->getUrl());
                 continue;
             }
 
-            try {
-                $response = $this->requestFactory->request(
-                    'https://www.bing.com/indexnow',
-                    'POST',
-                    [
-                        'headers' => ['Content-Type' => 'application/json'],
-                        'body' => json_encode($postData),
-                    ]
-                );
-                $statusCode = $response->getStatusCode();
-                if (in_array($statusCode, [200, 202], true)) {
-                    $this->logger->info(sprintf('Batch IndexNow successful for domain %s: %d URLs sent.', $domain, count($domainUrls)));
-                    $overallSuccess = true;
-                } else {
-                    $this->logger->warning(sprintf(
-                        'Batch IndexNow failed for domain %s with status %d and message: %s',
-                        $domain,
-                        $statusCode,
-                        $response->getBody()
-                    ));
-                }
-            } catch (\Throwable $e) {
-                $this->logger->error('Batch IndexNow error for domain ' . $domain . ': ' . $e->getMessage());
-            }
+            $groupedStacks[$host][] = $stack;
         }
 
-        return $overallSuccess;
-
+        return $groupedStacks;
     }
 }

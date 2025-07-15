@@ -11,15 +11,13 @@ declare(strict_types=1);
 
 namespace JWeiland\IndexNow\Hook;
 
-use JWeiland\IndexNow\Configuration\Exception\ApiKeyNotAvailableException;
-use JWeiland\IndexNow\Configuration\ExtConf;
 use JWeiland\IndexNow\Domain\Repository\StackRepository;
 use JWeiland\IndexNow\Event\ModifyPageUidEvent;
+use JWeiland\IndexNow\Notifier\SingleNotificationTrait;
 use TYPO3\CMS\Backend\Routing\PreviewUriBuilder;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
-use TYPO3\CMS\Core\Http\RequestFactory;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
@@ -34,9 +32,9 @@ use TYPO3\CMS\Core\Utility\MathUtility;
  */
 class DataHandlerHook
 {
+    use SingleNotificationTrait;
+
     public function __construct(
-        protected ExtConf $extConf,
-        protected RequestFactory $requestFactory,
         protected StackRepository $stackRepository,
         protected PageRenderer $pageRenderer,
         protected FlashMessageService $flashMessageService,
@@ -55,7 +53,7 @@ class DataHandlerHook
                     $sysLanguageUid = (int)$mergedRecord['sys_language_uid'];
                 }
 
-                // if table is pages, we need to get sys_language_uid form $request object
+                // if the table is pages, we need to get sys_language_uid form $request object
                 if ($table === 'pages') {
                     if (isset($GLOBALS['TYPO3_REQUEST']) && $GLOBALS['TYPO3_REQUEST'] instanceof \Psr\Http\Message\ServerRequestInterface) {
                         $queryParams = $GLOBALS['TYPO3_REQUEST']->getQueryParams();
@@ -74,24 +72,12 @@ class DataHandlerHook
                     continue;
                 }
 
-                try {
-                    $url = $this->getPreviewUrl($pageUid, $sysLanguageUid);
-                    if ($url === null) {
-                        continue;
-                    }
-
-                    $this->stackRepository->insert(
-                        $this->getUrlForSearchEngineEndpoint($url)
-                    );
-                } catch (ApiKeyNotAvailableException) {
-                    $this->sendBackendNotification(
-                        'Missing API key',
-                        'Please set an API key for EXT:indexnow in extension settings',
-                        ContextualFeedbackSeverity::ERROR
-                    );
-
-                    break 2;
+                $url = $this->getPreviewUrl($pageUid, $sysLanguageUid);
+                if ($url === null) {
+                    continue;
                 }
+
+                $this->stackRepository->insert($url);
             }
         }
     }
@@ -154,51 +140,12 @@ class DataHandlerHook
         }
     }
 
-    protected function getUrlForSearchEngineEndpoint(string $url): string
-    {
-        // in notifyBatchMode, we only need the url and not the search engine endpoint
-        if ($this->extConf->isNotifyBatchMode()) {
-            if ($this->extConf->isEnableDebug()) {
-                $this->sendBackendNotification(
-                    'Debug URL to searchengine',
-                    'URL: ' . $url,
-                    ContextualFeedbackSeverity::INFO
-                );
-            }
-            return $url;
-        }
-        $urlForSearchEngine = str_replace(
-            [
-                '###URL###',
-                '###APIKEY###',
-            ],
-            [
-                $url,
-                $this->extConf->getApiKey(),
-            ],
-            $this->extConf->getSearchEngineEndpoint()
-        );
-
-        if ($this->extConf->isEnableDebug()) {
-            $this->sendBackendNotification(
-                'Debug URL to searchengine',
-                'URL: ' . $urlForSearchEngine,
-                ContextualFeedbackSeverity::INFO
-            );
-        }
-
-        return $urlForSearchEngine;
-
-    }
-
     /**
      * If NEW, $recordFromRequest will contain nearly all fields.
-     * If updated, $recordFromRequest will only contain modified fields. PID f.e. is missing
+     * If updated, $recordFromRequest will only contain modified fields. PID f.e. is missing.
      * Use this method to get a merged record (DB and Request).
-     *
-     * @param string|int $uid
      */
-    protected function getMergedRecord($uid, string $table, array $recordFromRequest): array
+    protected function getMergedRecord(int|string $uid, string $table, array $recordFromRequest): array
     {
         if (!MathUtility::canBeInterpretedAsInteger($uid)) {
             return $recordFromRequest;
