@@ -86,8 +86,8 @@ class SearchEngineNotifier
                         sprintf(
                             'Request to indexnow.org results in StatusCode %d with message: %s',
                             $statusCode,
-                            $response->getBody()
-                        )
+                            $response->getBody(),
+                        ),
                     );
                 } else {
                     $isValidRequest = true;
@@ -96,8 +96,8 @@ class SearchEngineNotifier
                 $this->logger->error(
                     sprintf(
                         'Request to indexnow.org results in Error: %s',
-                        GeneralUtility::quoteJSvalue($e->getMessage())
-                    )
+                        GeneralUtility::quoteJSvalue($e->getMessage()),
+                    ),
                 );
             }
         }
@@ -143,7 +143,7 @@ class SearchEngineNotifier
                         'Content-Type' => 'application/json',
                     ],
                     'body' => json_encode($postData),
-                ]
+                ],
             );
 
             $statusCode = $response->getStatusCode();
@@ -160,7 +160,7 @@ class SearchEngineNotifier
                     'Batch IndexNow failed for domain %s with status %d and message: %s',
                     $host,
                     $statusCode,
-                    $response->getBody()
+                    $response->getBody(),
                 ));
             }
         } catch (\Throwable $e) {

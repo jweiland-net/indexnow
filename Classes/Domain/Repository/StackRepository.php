@@ -59,8 +59,8 @@ class StackRepository
             ->where(
                 $this->queryBuilder->expr()->eq(
                     'uid',
-                    $this->queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)
-                )
+                    $this->queryBuilder->createNamedParameter($uid, Connection::PARAM_INT),
+                ),
             )
             ->executeStatement();
     }
@@ -91,8 +91,8 @@ class StackRepository
                 ->where(
                     $this->queryBuilder->expr()->eq(
                         'url_hash',
-                        $this->queryBuilder->createNamedParameter($this->hash($url))
-                    )
+                        $this->queryBuilder->createNamedParameter($this->hash($url)),
+                    ),
                 )
                 ->executeQuery()
                 ->fetchOne();

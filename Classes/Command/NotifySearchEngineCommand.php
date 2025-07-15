@@ -25,7 +25,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 #[AsCommand(
     name: 'indexnow:notify',
-    description: 'Process records of table tx_indexnow_stack and inform searchengine about modifications via indexnow.'
+    description: 'Process records of table tx_indexnow_stack and inform searchengine about modifications via indexnow.',
 )]
 class NotifySearchEngineCommand extends Command
 {

@@ -38,7 +38,7 @@ class DataHandlerHook
         protected StackRepository $stackRepository,
         protected PageRenderer $pageRenderer,
         protected FlashMessageService $flashMessageService,
-        protected EventDispatcher $eventDispatcher
+        protected EventDispatcher $eventDispatcher,
     ) {}
 
     public function processDatamap_beforeStart(DataHandler $dataHandler): void
@@ -97,7 +97,7 @@ class DataHandlerHook
 
         /** @var ModifyPageUidEvent $modifyPageUidEvent */
         $modifyPageUidEvent = $this->eventDispatcher->dispatch(
-            new ModifyPageUidEvent($recordToBeStored, $table, $pageUid, $pageRecord)
+            new ModifyPageUidEvent($recordToBeStored, $table, $pageUid, $pageRecord),
         );
 
         return $modifyPageUidEvent->getPageUid();
@@ -106,14 +106,14 @@ class DataHandlerHook
     protected function sendBackendNotification(
         string $title,
         string $message,
-        ContextualFeedbackSeverity $severity = ContextualFeedbackSeverity::OK
+        ContextualFeedbackSeverity $severity = ContextualFeedbackSeverity::OK,
     ): void {
         $flashMessage = GeneralUtility::makeInstance(
             FlashMessage::class,
             $message,
             $title,
             $severity,
-            true
+            true,
         );
 
         $messageQueue = $this->flashMessageService->getMessageQueueByIdentifier();
@@ -154,7 +154,7 @@ class DataHandlerHook
         $record = BackendUtility::getRecord($table, (int)$uid, 'uid,pid');
         ArrayUtility::mergeRecursiveWithOverrule(
             $record,
-            $recordFromRequest
+            $recordFromRequest,
         );
 
         return $record;

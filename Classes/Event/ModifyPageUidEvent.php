@@ -27,7 +27,7 @@ class ModifyPageUidEvent
         private readonly array $record,
         private readonly string $table,
         private int $pageUid,
-        private readonly ?array $pageRecord
+        private readonly ?array $pageRecord,
     ) {}
 
     public function getRecord(): array

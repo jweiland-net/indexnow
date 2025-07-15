@@ -65,7 +65,7 @@ class ExtConf
         if ($this->apiKey === '') {
             throw new ApiKeyNotAvailableException(
                 'API key for indexnow not set in extension settings',
-                1636752398
+                1636752398,
             );
         }
 
