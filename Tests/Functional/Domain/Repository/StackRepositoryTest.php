@@ -52,7 +52,7 @@ class StackRepositoryTest extends FunctionalTestCase
 
         self::assertInstanceOf(
             Stack::class,
-            current($stackRecords)
+            current($stackRecords),
         );
 
         self::assertCount(
