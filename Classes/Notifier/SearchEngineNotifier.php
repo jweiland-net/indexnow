@@ -33,8 +33,8 @@ class SearchEngineNotifier
 
     public function __construct(
         protected RequestFactory $requestFactory,
-        protected LoggerInterface $logger,
         protected ExtConf $extConf,
+        protected LoggerInterface $logger,
     ) {}
 
     /**
@@ -113,7 +113,7 @@ class SearchEngineNotifier
             $uri = $uri->withQuery(HttpUtility::buildQueryString([
                 'url' => $stack->getUrl(),
                 'key' => $this->extConf->getApiKey(),
-            ], '&'));
+            ]));
         } catch (ApiKeyNotAvailableException) {
             return '';
         }
