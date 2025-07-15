@@ -12,34 +12,52 @@ declare(strict_types=1);
 namespace JWeiland\IndexNow\Configuration;
 
 use JWeiland\IndexNow\Configuration\Exception\ApiKeyNotAvailableException;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
+use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationExtensionNotConfiguredException;
+use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationPathDoesNotExistException;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
-use TYPO3\CMS\Core\SingletonInterface;
 
 /**
- * This class streamlines all settings from extension manager
+ * This class streamlines all settings from the extension manager
  */
-class ExtConf implements SingletonInterface
+#[Autoconfigure(constructor: 'create')]
+class ExtConf
 {
-    protected string $apiKey = '';
+    private const EXT_KEY = 'indexnow';
 
-    protected string $searchEngineEndpoint = '';
+    private const DEFAULT_SETTINGS = [
+        'apiKey' => '',
+        'searchEngineEndpoint' => '',
+        'enableDebug' => false,
+        'notifyBatchMode' => false,
+    ];
 
-    protected bool $enableDebug = false;
+    public function __construct(
+        private readonly string $apiKey = self::DEFAULT_SETTINGS['apiKey'],
+        private readonly string $searchEngineEndpoint = self::DEFAULT_SETTINGS['searchEngineEndpoint'],
+        private readonly bool $enableDebug = self::DEFAULT_SETTINGS['enableDebug'],
+        private readonly bool $notifyBatchMode = self::DEFAULT_SETTINGS['notifyBatchMode'],
+    ) {}
 
-    protected bool $notifyBatchMode = false;
-
-    public function __construct(ExtensionConfiguration $extensionConfiguration)
+    public static function create(ExtensionConfiguration $extensionConfiguration): self
     {
-        $extConf = $extensionConfiguration->get('indexnow');
-        if (is_array($extConf)) {
-            // call setter method foreach configuration entry
-            foreach ($extConf as $key => $value) {
-                $methodName = 'set' . ucfirst($key);
-                if (method_exists($this, $methodName)) {
-                    $this->$methodName($value);
-                }
-            }
+        $extensionSettings = self::DEFAULT_SETTINGS;
+
+        // Overwrite default extension settings with values from EXT_CONF
+        try {
+            $extensionSettings = array_merge(
+                $extensionSettings,
+                $extensionConfiguration->get(self::EXT_KEY),
+            );
+        } catch (ExtensionConfigurationExtensionNotConfiguredException|ExtensionConfigurationPathDoesNotExistException) {
         }
+
+        return new self(
+            apiKey: (string)$extensionSettings['apiKey'],
+            searchEngineEndpoint: (string)$extensionSettings['searchEngineEndpoint'],
+            enableDebug: (bool)$extensionSettings['enableDebug'],
+            notifyBatchMode: (bool)$extensionSettings['notifyBatchMode'],
+        );
     }
 
     /**
@@ -57,11 +75,6 @@ class ExtConf implements SingletonInterface
         return $this->apiKey;
     }
 
-    public function setApiKey(string $apiKey): void
-    {
-        $this->apiKey = trim($apiKey);
-    }
-
     public function getSearchEngineEndpoint(): string
     {
         if ($this->searchEngineEndpoint === '') {
@@ -71,29 +84,13 @@ class ExtConf implements SingletonInterface
         return $this->searchEngineEndpoint;
     }
 
-    public function setSearchEngineEndpoint(string $searchEngineEndpoint): void
-    {
-        $this->searchEngineEndpoint = trim($searchEngineEndpoint);
-    }
-
     public function isEnableDebug(): bool
     {
         return $this->enableDebug;
-    }
-
-    public function setEnableDebug(string $enableDebug): void
-    {
-        $this->enableDebug = (bool)$enableDebug;
     }
 
     public function isNotifyBatchMode(): bool
     {
         return (bool)$this->notifyBatchMode;
     }
-
-    public function setNotifyBatchMode(string $notifyBatchMode): void
-    {
-        $this->notifyBatchMode = (bool)$notifyBatchMode;
-    }
-
 }

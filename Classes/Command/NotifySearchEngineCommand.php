@@ -35,8 +35,8 @@ class NotifySearchEngineCommand extends Command
     public function __construct(
         protected SearchEngineNotifier $searchEngineNotifier,
         protected StackRepository $stackRepository,
-        protected LoggerInterface $logger,
         protected ExtConf $extConf,
+        protected LoggerInterface $logger,
     ) {
         parent::__construct();
     }
