@@ -13,7 +13,6 @@ namespace JWeiland\IndexNow\Hook;
 
 use JWeiland\IndexNow\Domain\Repository\StackRepository;
 use JWeiland\IndexNow\Event\ModifyPageUidEvent;
-use JWeiland\IndexNow\Notifier\SingleNotificationTrait;
 use TYPO3\CMS\Backend\Routing\PreviewUriBuilder;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
@@ -32,8 +31,6 @@ use TYPO3\CMS\Core\Utility\MathUtility;
  */
 class DataHandlerHook
 {
-    use SingleNotificationTrait;
-
     public function __construct(
         protected StackRepository $stackRepository,
         protected PageRenderer $pageRenderer,
