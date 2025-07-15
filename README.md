@@ -72,13 +72,7 @@ IndexNow endpoint of Bing as default for you. All endpoints will inform
 search engines in the same way. It doesn't matter which endpoint you chose. The
 result is always the same. Just to clarify that: Using the Bing endpoint will
 not only inform the Bing search engine! It will inform all registered search
-engines. Use `###URL###` placeholder to replace that with the URL of the
-modified page. Use `###APIKEY###` placeholder to replace that with the API key
-from above.
-
-Enable Debug Mode
-: While saving records in TYPO3 backend a flash message with the preview URL
-of modified page will be shown.
+engines.
 
 Notify batch mode
 : If enabled, the search engine will be notified using batch mode. This means that modified URLs are sent in a single request. A maximum of 10,000 URLs can be sent per batch
@@ -194,10 +188,15 @@ notifications at Packagist. You can still download these
 versions from TYPO3 TER or use version `0.0.4` which solves
 that issue.
 
-## ToDo
+## Update
 
-There is a possibility to send ~10.000 update links in just one request. That
-would be much better than sending each URL one by one.
+### Update to Version 0.0.7
+
+- The debug mode has been removed, as it was primarily used for viewing the resulting URL. With xDebug, this functionality is now redundant.
+- Only the URL to the stack repository is now stored; storing the API KEY in the database is inherently insecure and has been eliminated.
+- The `###KEY###` and `###URL###` placeholders have been removed from the search engine endpoint configuration in the extension settings. These values are now added dynamically, allowing the URL to be reused consistently for both single and batch mode notifications.
+
+## ToDo
 
 Delete all records from `tx_indexnow_stack` for a specific page on
 delete (DataHandler).
@@ -205,9 +204,6 @@ delete (DataHandler).
 Creating a new page or content element should call the IndexNow services.
 Currently, only modified pages and content elements will be processed. We
 should use the afterAllDatabaseOperations DataHandler hook instead.
-
-Before inserting the URL to `tx_indexnow_stack` we should check for
-already existing records to prevent duplicates.
 
 Nice to have: Add a section into EXT:reports, if file with API key is
 available.
