@@ -11,10 +11,6 @@
 				<source>Search Engine Endpoint: Define the index-now URL of searchengine which should be used to inform about modified content. Use ###URL### and ###APIKEY### for dynamic values.</source>
 				<target>Endpunkt der Suchmaschine: Geben Sie hier die index-now URL zum Suchmaschinenanbieter an, um ihn über aktualisierte Inhalte zu informieren. Verwende ###URL### und ###APIKEY### als dynamische Werte.</target>
 			</trans-unit>
-			<trans-unit id="enableDebug">
-				<source>Enable debug mode: In case of problems it can help to activate the debug mode. In this case, additional information is displayed in the backend, such as the URL that is sent to the search engines.</source>
-				<target>Debug Modus aktivieren: Bei Problemen kann es helfen des Debug Modus zu aktivieren. In diesem Falle werden zusätzliche Informationen im Backend ausgegeben, wie z.B. die URL, die an die Suchmaschinen gesendet wird.</target>
-			</trans-unit>
 			<trans-unit id="notifyBatchMode">
 				<source>If this checkbox is enabled, the search engine will be notified using batch mode. This means that modified URLs are sent in a single request. A maximum of 10,000 URLs can be sent per batch.</source>
 				<target>Benachrichtigung im Batch-Modus aktivieren: Wenn diese Checkbox aktiviert ist, wird die Suchmaschine im Batch-Modus benachrichtigt. Das bedeutet, dass geänderte URLs gesammelt in einer einzigen Anfrage gesendet werden. Pro Durchgang können maximal 10.000 URLs übermittelt werden.</target>
