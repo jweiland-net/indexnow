@@ -1,5 +1,5 @@
 {
-	"name": "ttg-wolfhoel/indexnow",
+	"name": "jweiland/indexnow",
 	"description": "TYPO3 extension to inform various search engines over IndexNow endpoint about content updates",
 	"type": "typo3-cms-extension",
 	"license": "GPL-2.0-or-later",
@@ -11,7 +11,7 @@
 		}
 	],
 	"require": {
-		"typo3/cms-core": "^12.4.15 || ^13.4.0"
+		"typo3/cms-core": "^12.4.31 || ^13.4.12"
 	},
 	"require-dev": {
 		"ergebnis/composer-normalize": "^2.44",
@@ -27,18 +27,18 @@
 		}
 	},
 	"config": {
-		"vendor-dir": ".Build/vendor",
-		"bin-dir": ".Build/bin",
 		"allow-plugins": {
 			"ergebnis/composer-normalize": true,
 			"typo3/class-alias-loader": true,
 			"typo3/cms-composer-installers": true
-		}
+		},
+		"bin-dir": ".Build/bin",
+		"vendor-dir": ".Build/vendor"
 	},
 	"extra": {
 		"typo3/cms": {
-			"extension-key": "indexnow",
 			"app-dir": ".Build",
+			"extension-key": "indexnow",
 			"web-dir": ".Build/Web"
 		}
 	}
