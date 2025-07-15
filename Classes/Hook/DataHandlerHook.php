@@ -48,6 +48,23 @@ class DataHandlerHook
         foreach ($dataHandler->datamap as $table => $records) {
             foreach ($records as $uid => $record) {
                 $mergedRecord = $this->getMergedRecord($uid, $table, $record);
+
+                // get language from mergedRecord -> sys_language_uid only works if table != pages
+                $sysLanguageUid = 0;
+                if (isset($mergedRecord['sys_language_uid']) && $mergedRecord['sys_language_uid'] > 0) {
+                    $sysLanguageUid = (int)$mergedRecord['sys_language_uid'];
+                }
+
+                // if table is pages, we need to get sys_language_uid form $request object
+                if ($table === 'pages') {
+                    if (isset($GLOBALS['TYPO3_REQUEST']) && $GLOBALS['TYPO3_REQUEST'] instanceof \Psr\Http\Message\ServerRequestInterface) {
+                        $queryParams = $GLOBALS['TYPO3_REQUEST']->getQueryParams();
+                        if (isset($queryParams['overrideVals']['pages']['sys_language_uid'])) {
+                            $sysLanguageUid = (int)$queryParams['overrideVals']['pages']['sys_language_uid'];
+                        }
+                    }
+                }
+
                 if ($mergedRecord === []) {
                     continue;
                 }
@@ -58,7 +75,7 @@ class DataHandlerHook
                 }
 
                 try {
-                    $url = $this->getPreviewUrl($pageUid);
+                    $url = $this->getPreviewUrl($pageUid, $sysLanguageUid);
                     if ($url === null) {
                         continue;
                     }
@@ -117,18 +134,21 @@ class DataHandlerHook
         $messageQueue->addMessage($flashMessage);
     }
 
-    protected function getPreviewUrl(int $pageUid): ?string
+    protected function getPreviewUrl(int $pageUid, int $sysLanguageUid = 0): ?string
     {
         $anchorSection = '';
         $additionalParams = '';
 
         try {
-            return htmlspecialchars(
-                (string)PreviewUriBuilder::create($pageUid)
-                    ->withSection($anchorSection)
-                    ->withAdditionalQueryParameters($additionalParams)
-                    ->buildUri()
-            );
+            $previewUriBuilder = PreviewUriBuilder::create($pageUid)
+                ->withSection($anchorSection)
+                ->withAdditionalQueryParameters($additionalParams);
+
+            // Only set language if it's different from default
+            if ($sysLanguageUid > 0) {
+                $previewUriBuilder = $previewUriBuilder->withLanguage($sysLanguageUid);
+            }
+            return htmlspecialchars((string)$previewUriBuilder->buildUri());
         } catch (UnableToLinkToPageException) {
             return null;
         }
@@ -136,6 +156,17 @@ class DataHandlerHook
 
     protected function getUrlForSearchEngineEndpoint(string $url): string
     {
+        // in notifyBatchMode, we only need the url and not the search engine endpoint
+        if ($this->extConf->isNotifyBatchMode()) {
+            if ($this->extConf->isEnableDebug()) {
+                $this->sendBackendNotification(
+                    'Debug URL to searchengine',
+                    'URL: ' . $url,
+                    ContextualFeedbackSeverity::INFO
+                );
+            }
+            return $url;
+        }
         $urlForSearchEngine = str_replace(
             [
                 '###URL###',
@@ -157,6 +188,7 @@ class DataHandlerHook
         }
 
         return $urlForSearchEngine;
+
     }
 
     /**

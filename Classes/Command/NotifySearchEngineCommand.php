@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace JWeiland\IndexNow\Command;
 
+use JWeiland\IndexNow\Configuration\ExtConf;
 use JWeiland\IndexNow\Domain\Repository\StackRepository;
 use JWeiland\IndexNow\Notifier\SearchEngineNotifier;
 use Psr\Log\LoggerInterface;
@@ -35,12 +36,19 @@ class NotifySearchEngineCommand extends Command
         protected SearchEngineNotifier $searchEngineNotifier,
         protected StackRepository $stackRepository,
         protected LoggerInterface $logger,
+        protected ExtConf $extConf,
     ) {
         parent::__construct();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        if ($this->extConf->isNotifyBatchMode()) {
+            $output->writeln('<info>Notify batch mode is enabled.</info>');
+            $this->useNotifyBatchMode($input, $output);
+            return self::SUCCESS;
+        }
+
         $total = 0;
         $skipped = 0;
         $errors = 0;
@@ -96,5 +104,45 @@ class NotifySearchEngineCommand extends Command
         $output->writeln(sprintf('<info>%d URL records have been sent successfully</info>', $total));
 
         return self::SUCCESS;
+    }
+
+    protected function useNotifyBatchMode(InputInterface $input, OutputInterface $output): int
+    {
+        $records = $this->stackRepository->findAll();
+        $urlMap = [];
+        $uids = [];
+
+        foreach ($records as $record) {
+            $url = trim($record['url'] ?? '');
+            if ($url === '') {
+                $this->stackRepository->deleteByUid((int)$record['uid']);
+                $this->logger->info('URL record with empty URL found. Record deleted. Skip.');
+                $output->writeln('<info>URL record with empty URL found. Record deleted. Skip.</info>');
+                continue;
+            }
+            $urlMap[] = $url;
+            $uids[] = (int)$record['uid'];
+        }
+
+        if (empty($urlMap)) {
+            $this->logger->info('No URL records available, nothing sent.');
+            $output->writeln('<info>No URL records available, nothing sent.</info>');
+            return self::SUCCESS;
+        }
+
+        $success = $this->searchEngineNotifier->notifyBatch($urlMap);
+
+        if ($success) {
+            foreach ($uids as $uid) {
+                $this->stackRepository->deleteByUid($uid);
+            }
+            $this->logger->info(sprintf('Batch sent (%d URLs), all entries deleted', count($uids)));
+            $output->writeln(sprintf('<info>Batch sent (%d URLs), all entries deleted.</info>', count($uids)));
+            return self::SUCCESS;
+        }
+
+        $this->logger->error('Batch sending failed, entries remain in stack.');
+        $output->writeln('<error>Batch sending failed, entries remain in stack.</error>');
+        return self::FAILURE;
     }
 }

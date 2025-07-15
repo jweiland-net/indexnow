@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <xliff version="1.0">
 	<file source-language="en" datatype="plaintext" original="messages" date="2021-10-29T14:23:40Z" product-name="indexnow">
-		<header/>
+		<header />
 		<body>
 			<trans-unit id="apiKey">
 				<source>API Key: Each request needs an API key to identify your URLs. You can build one here: https://www.bing.com/indexnow</source>
@@ -14,6 +14,10 @@
 			<trans-unit id="enableDebug">
 				<source>Enable debug mode: In case of problems it can help to activate the debug mode. In this case, additional information is displayed in the backend, such as the URL that is sent to the search engines.</source>
 				<target>Debug Modus aktivieren: Bei Problemen kann es helfen des Debug Modus zu aktivieren. In diesem Falle werden zusätzliche Informationen im Backend ausgegeben, wie z.B. die URL, die an die Suchmaschinen gesendet wird.</target>
+			</trans-unit>
+			<trans-unit id="notifyBatchMode">
+				<source>If this checkbox is enabled, the search engine will be notified using batch mode. This means that modified URLs are sent in a single request. A maximum of 10,000 URLs can be sent per batch.</source>
+				<target>Benachrichtigung im Batch-Modus aktivieren: Wenn diese Checkbox aktiviert ist, wird die Suchmaschine im Batch-Modus benachrichtigt. Das bedeutet, dass geänderte URLs gesammelt in einer einzigen Anfrage gesendet werden. Pro Durchgang können maximal 10.000 URLs übermittelt werden.</target>
 			</trans-unit>
 		</body>
 	</file>
