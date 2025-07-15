@@ -7,7 +7,7 @@
  * LICENSE file that was distributed with this source code.
  */
 
-namespace JWeiland\Indexnow\Tests\Functional\Configuration;
+namespace JWeiland\IndexNow\Tests\Functional\Configuration;
 
 use JWeiland\IndexNow\Configuration\Exception\ApiKeyNotAvailableException;
 use JWeiland\Indexnow\Configuration\ExtConf;

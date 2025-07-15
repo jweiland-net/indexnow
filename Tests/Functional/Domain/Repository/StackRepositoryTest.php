@@ -7,7 +7,7 @@
  * LICENSE file that was distributed with this source code.
  */
 
-namespace JWeiland\Indexnow\Tests\Functional\Domain\Repository;
+namespace JWeiland\IndexNow\Tests\Functional\Domain\Repository;
 
 use JWeiland\IndexNow\Domain\Model\Stack;
 use JWeiland\IndexNow\Domain\Repository\StackRepository;

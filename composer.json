@@ -26,6 +26,11 @@
 			"JWeiland\\IndexNow\\": "Classes/"
 		}
 	},
+	"autoload-dev": {
+		"psr-4": {
+			"JWeiland\\IndexNow\\Tests\\": "Tests"
+		}
+	},
 	"config": {
 		"allow-plugins": {
 			"ergebnis/composer-normalize": true,

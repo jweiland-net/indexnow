@@ -7,7 +7,7 @@
  * LICENSE file that was distributed with this source code.
  */
 
-namespace JWeiland\Indexnow\Tests\Functional\Domain\Model;
+namespace JWeiland\IndexNow\Tests\Functional\Domain\Model;
 
 use JWeiland\IndexNow\Domain\Model\Stack;
 use PHPUnit\Framework\Attributes\Test;
