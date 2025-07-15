@@ -14,7 +14,7 @@ namespace JWeiland\IndexNow\EventListener;
 use JWeiland\IndexNow\Event\ModifyPageUidEvent;
 
 /**
- * Prevent informing IndexNow about pages with activated no_index property.
+ * Prevent informing IndexNow about pages with the activated no_index property.
  */
 class RespectPagesWithNoIndexEventListener
 {
