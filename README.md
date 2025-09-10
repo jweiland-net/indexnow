@@ -208,6 +208,12 @@ should use the afterAllDatabaseOperations DataHandler hook instead.
 Nice to have: Add a section into EXT:reports, if file with API key is
 available.
 
+## Support
+
+Free Support is available via [GitHub Issue Tracker](https://github.com/jweiland-net/indexnow/issues).
+
+For commercial support, please contact us at [support@jweiland.net](support@jweiland.net).
+
 <!-- MARKDOWN LINKS & IMAGES -->
 
 [extension-build-shield]: https://poser.pugx.org/jweiland/indexnow/v/stable.svg?style=for-the-badge
