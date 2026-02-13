@@ -13,6 +13,7 @@ namespace JWeiland\IndexNow\Hook;
 
 use JWeiland\IndexNow\Domain\Repository\StackRepository;
 use JWeiland\IndexNow\Event\ModifyPageUidEvent;
+use JWeiland\IndexNow\Event\ProvidePreviewUrlEvent;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Routing\PreviewUriBuilder;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
@@ -42,16 +43,16 @@ class DataHandlerHook
     public function processDatamap_beforeStart(DataHandler $dataHandler): void
     {
         foreach ($dataHandler->datamap as $table => $records) {
-            foreach ($records as $uid => $record) {
-                $mergedRecord = $this->getMergedRecord($uid, $table, $record);
+            foreach ($records as $recordUid => $record) {
+                $mergedRecord = $this->getMergedRecord($recordUid, $table, $record);
 
-                // get language from mergedRecord -> sys_language_uid only works if table != pages
+                // Get language from mergedRecord -> sys_language_uid only works if table != pages
                 $sysLanguageUid = 0;
                 if (isset($mergedRecord['sys_language_uid']) && $mergedRecord['sys_language_uid'] > 0) {
                     $sysLanguageUid = (int)$mergedRecord['sys_language_uid'];
                 }
 
-                // if the table is pages, we need to get sys_language_uid form $request object
+                // If the table is pages, we need to get sys_language_uid from $request object
                 if ($table === 'pages') {
                     if (isset($GLOBALS['TYPO3_REQUEST']) && $GLOBALS['TYPO3_REQUEST'] instanceof ServerRequestInterface) {
                         $queryParams = $GLOBALS['TYPO3_REQUEST']->getQueryParams();
@@ -70,12 +71,18 @@ class DataHandlerHook
                     continue;
                 }
 
-                $url = $this->getPreviewUrl($pageUid, $sysLanguageUid);
-                if ($url === null) {
+                /** @var ProvidePreviewUrlEvent $providePreviewUrlEvent */
+                $providePreviewUrlEvent = $this->eventDispatcher->dispatch(
+                    new ProvidePreviewUrlEvent($table, $recordUid, $mergedRecord),
+                );
+
+                $previewUrl = $providePreviewUrlEvent->getPreviewUrl() ?: $this->getPreviewUrl($pageUid, $sysLanguageUid);
+
+                if ($previewUrl === null || $previewUrl === '') {
                     continue;
                 }
 
-                $this->stackRepository->insert($url);
+                $this->stackRepository->insert($previewUrl);
             }
         }
     }
