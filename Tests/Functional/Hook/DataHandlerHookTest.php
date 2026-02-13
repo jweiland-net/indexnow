@@ -9,7 +9,6 @@
 
 namespace JWeiland\IndexNow\Tests\Functional\Hook;
 
-use JWeiland\Events2\Event\GeneratePathSegmentEvent;
 use JWeiland\IndexNow\Domain\Repository\StackRepository;
 use JWeiland\IndexNow\Event\ModifyPageUidEvent;
 use JWeiland\IndexNow\Event\ProvidePreviewUrlEvent;
