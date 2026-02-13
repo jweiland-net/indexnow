@@ -108,23 +108,6 @@ class DataHandlerHook
         return $modifyPageUidEvent->getPageUid();
     }
 
-    protected function sendBackendNotification(
-        string $title,
-        string $message,
-        ContextualFeedbackSeverity $severity = ContextualFeedbackSeverity::OK,
-    ): void {
-        $flashMessage = GeneralUtility::makeInstance(
-            FlashMessage::class,
-            $message,
-            $title,
-            $severity,
-            true,
-        );
-
-        $messageQueue = $this->flashMessageService->getMessageQueueByIdentifier();
-        $messageQueue->addMessage($flashMessage);
-    }
-
     protected function getPreviewUrl(int $pageUid, int $sysLanguageUid = 0): ?string
     {
         $anchorSection = '';
