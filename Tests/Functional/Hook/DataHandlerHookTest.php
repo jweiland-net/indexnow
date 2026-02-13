@@ -9,7 +9,10 @@
 
 namespace JWeiland\IndexNow\Tests\Functional\Hook;
 
+use JWeiland\Events2\Event\GeneratePathSegmentEvent;
 use JWeiland\IndexNow\Domain\Repository\StackRepository;
+use JWeiland\IndexNow\Event\ModifyPageUidEvent;
+use JWeiland\IndexNow\Event\ProvidePreviewUrlEvent;
 use JWeiland\IndexNow\Hook\DataHandlerHook;
 use JWeiland\IndexNow\Tests\Functional\SiteHandling\SiteBasedTestTrait;
 use PHPUnit\Framework\Attributes\Test;
@@ -177,5 +180,71 @@ class DataHandlerHookTest extends FunctionalTestCase
         ];
 
         $this->subject->processDatamap_beforeStart($dataHandler);
+    }
+
+    #[Test]
+    public function hookWillInsertNewStackRecordWithPreviewUrlFromEventListener(): void
+    {
+        $modifyPageUidEvent = new ModifyPageUidEvent(
+            [],
+            'pages',
+            16,
+            [],
+        );
+
+        $providePreviewUrlEvent = new ProvidePreviewUrlEvent(
+            table: 'tx_news_domain_model_news',
+            recordUid: 123,
+            record: [
+                'uid' => 123,
+                'pid' => 16,
+            ],
+        );
+
+        $providePreviewUrlEvent->setPreviewUrl('https://example.com/news/123');
+
+        $eventDispatcherMock = $this->createMock(EventDispatcher::class);
+        $eventDispatcherMock
+            ->expects(self::atLeastOnce())
+            ->method('dispatch')
+            ->willReturnCallback(static function (object $event) use ($providePreviewUrlEvent, $modifyPageUidEvent): object {
+                if ($event instanceof ProvidePreviewUrlEvent) {
+                    return $providePreviewUrlEvent;
+                }
+
+                if ($event instanceof ModifyPageUidEvent) {
+                    return $modifyPageUidEvent;
+                }
+
+                return $event;
+            });
+
+        $subject = new DataHandlerHook(
+            $this->stackRepositoryMock,
+            $this->get(PageRenderer::class),
+            $this->get(FlashMessageService::class),
+            $eventDispatcherMock,
+        );
+
+        // PreviewUriBuilder::create is called statically in DataHandlerHook
+        // so we have to initialize the full TYPO3 backend and site
+        $this->stackRepositoryMock
+            ->expects(self::atLeastOnce())
+            ->method('insert')
+            ->with(self::identicalTo('https://example.com/news/123'));
+
+        /** @var DataHandler $dataHandler */
+        $dataHandler = $this->get(DataHandler::class);
+        $dataHandler->datamap = [
+            'pages' => [
+                'NEW1234' => [
+                    'uid' => 2,
+                    'pid' => 1,
+                    'title' => 'Plugin: events2',
+                ],
+            ],
+        ];
+
+        $subject->processDatamap_beforeStart($dataHandler);
     }
 }
