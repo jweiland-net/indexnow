@@ -77,18 +77,21 @@ engines.
 Notify batch mode
 : If enabled, the search engine will be notified using batch mode. This means that modified URLs are sent in a single request. A maximum of 10,000 URLs can be sent per batch
 
-### Host API Key file
+### API Key Verification File
 
-Create a file named `[API key].txt` with your API key as content and move it
-into your document root directory of your website server.
+IndexNow search engines [verify ownership](https://www.indexnow.org/documentation)
+by requesting a text file at `https://example.com/{apiKey}.txt` whose content
+matches the API key.
 
-#### Example
+This extension **serves the verification file automatically** from the
+configured API key — no manual file creation needed. Once you save the API key
+in the extension settings, the file is immediately available at
+`https://your-site.com/{apiKey}.txt`.
 
-If you chose `abc-ABC-123` as your API key you have to create a file named
-`abc-ABC-123.txt` and set `abc-ABC-123` as content of that file. Upload file
-`abc-ABC-123.txt` into the `/var/www/my-typo3-page/public` folder. Open
-`https://example.com/abc-ABC-123.txt` to make sure the file is public
-available and its content is `abc-ABC-123`.
+> **Note:** The verification file is served by a PSR-15 middleware that runs
+> early in the request pipeline. It only responds to root-level `.txt`
+> requests matching the configured key. All other requests pass through
+> unchanged.
 
 ### Task
 
@@ -131,14 +134,13 @@ var/log/typo3_indexnow_[hash].log
 
 ### IndexNow was informed, but search results are not updated
 
-The IndexNow provider will use your API key and request the file:
+The IndexNow provider will verify your API key by requesting
+`https://your-site.com/{apiKey}.txt`. This file is served automatically
+by the extension. If verification still fails, check:
 
-```text
-[API key].txt
-```
-
-with API key as content from your server. If it does not exist, validation
-fails and search engines will provide updated information much later.
+1. The API key is set in extension settings (`Settings` → `Configure extensions` → `indexnow`)
+2. The file is accessible: open `https://your-site.com/{apiKey}.txt` in a browser
+3. No caching proxy or WAF is blocking the `.txt` file request
 
 ### I have changed content, but there is no record in `tx_indexnow_stack`
 
@@ -205,8 +207,8 @@ Creating a new page or content element should call the IndexNow services.
 Currently, only modified pages and content elements will be processed. We
 should use the afterAllDatabaseOperations DataHandler hook instead.
 
-Nice to have: Add a section into EXT:reports, if file with API key is
-available.
+Nice to have: Add a section into EXT:reports to check IndexNow
+configuration health.
 
 ## Support
 
