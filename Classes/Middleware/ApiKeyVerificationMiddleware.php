@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace JWeiland\IndexNow\Middleware;
 
+use JWeiland\IndexNow\Configuration\Exception\ApiKeyNotAvailableException;
 use JWeiland\IndexNow\Configuration\ExtConf;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -18,6 +19,7 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use TYPO3\CMS\Core\Http\Response;
 use TYPO3\CMS\Core\Http\Stream;
+use TYPO3\CMS\Core\Site\Entity\Site;
 
 /**
  * Serves the IndexNow API key verification file at /{apiKey}.txt
@@ -39,6 +41,14 @@ class ApiKeyVerificationMiddleware implements MiddlewareInterface
     {
         $path = ltrim($request->getUri()->getPath(), '/');
 
+        $site = $request->getAttribute('site');
+        if ($site instanceof Site) {
+            $sitePath = ltrim($site->getBase()->getPath(), '/');
+            if ($sitePath !== '' && str_starts_with($path, $sitePath)) {
+                $path = ltrim(substr($path, strlen($sitePath)), '/');
+            }
+        }
+
         // Quick exit: only handle .txt files at root level (no slashes in path)
         if (!str_ends_with($path, '.txt') || str_contains($path, '/')) {
             return $handler->handle($request);
@@ -46,8 +56,7 @@ class ApiKeyVerificationMiddleware implements MiddlewareInterface
 
         try {
             $apiKey = $this->extConf->getApiKey();
-        } catch (\Exception) {
-            // No API key configured — skip
+        } catch (ApiKeyNotAvailableException) {
             return $handler->handle($request);
         }
 
@@ -61,6 +70,7 @@ class ApiKeyVerificationMiddleware implements MiddlewareInterface
 
         return new Response($stream, 200, [
             'Content-Type' => 'text/plain; charset=utf-8',
+            'Content-Length' => (string)strlen($apiKey),
             'Cache-Control' => 'public, max-age=86400',
         ]);
     }
