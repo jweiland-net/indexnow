@@ -1,9 +1,11 @@
 <?php
 
+use JWeiland\IndexNow\Middleware\ApiKeyVerificationMiddleware;
+
 return [
     'frontend' => [
         'jweiland/indexnow/api-key-verification' => [
-            'target' => \JWeiland\IndexNow\Middleware\ApiKeyVerificationMiddleware::class,
+            'target' => ApiKeyVerificationMiddleware::class,
             'after' => [
                 'typo3/cms-core/normalized-params-attribute',
             ],
