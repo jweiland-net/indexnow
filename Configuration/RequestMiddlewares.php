@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the package jweiland/indexnow.
  *
@@ -14,9 +16,6 @@ return [
         'jweiland/indexnow/api-key-verification' => [
             'target' => ApiKeyVerificationMiddleware::class,
             'after' => [
-                'typo3/cms-core/normalized-params-attribute',
-            ],
-            'before' => [
                 'typo3/cms-frontend/site',
             ],
         ],

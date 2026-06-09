@@ -1,5 +1,3 @@
-# cat=basic; type=string; label=LLL:EXT:indexnow/Resources/Private/Language/ExtConf.xlf:apiKey
-apiKey =
 # cat=basic; type=string; label=LLL:EXT:indexnow/Resources/Private/Language/ExtConf.xlf:searchEngineEndpoint
 searchEngineEndpoint = https://www.bing.com/indexnow
 # cat=basic; type=boolean; label=LLL:EXT:indexnow/Resources/Private/Language/ExtConf.xlf:notifyBatchMode
