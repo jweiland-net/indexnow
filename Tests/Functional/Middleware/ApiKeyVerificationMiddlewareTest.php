@@ -32,7 +32,7 @@ class ApiKeyVerificationMiddlewareTest extends FunctionalTestCase
 
     private ExtConf|MockObject $extConfMock;
 
-    private RequestHandlerInterface|MockObject $handlerMock;
+    private RequestHandlerInterface&MockObject $handlerMock;
 
     protected function setUp(): void
     {
