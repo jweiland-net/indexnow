@@ -26,7 +26,8 @@ use TYPO3\CMS\Core\Site\Entity\Site;
  *
  * IndexNow requires a verification file at the root of the website
  * whose filename and content match the configured API key. This
- * middleware serves that file dynamically from the extension configuration,
+ * middleware dynamically serves that endpoint, using the API key
+ * stored in the extension configuration,
  * removing the need to manually create or update a static file.
  *
  * @see https://www.indexnow.org/documentation
