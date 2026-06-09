@@ -1,0 +1,10 @@
+categories:
+  indexnow:
+    label: 'IndexNow'
+settings:
+  indexnow.apiKey:
+    label: 'LLL:EXT:indexnow/Resources/Private/Language/locallang_db.xlf:settings.indexnow.apiKey.label'
+    description: 'LLL:EXT:indexnow/Resources/Private/Language/locallang_db.xlf:settings.indexnow.apiKey.description'
+    category: 'indexnow'
+    type: string
+    default: ''

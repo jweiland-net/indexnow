@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+	<file source-language="en" datatype="plaintext" original="messages">
+		<body>
+			<trans-unit id="settings.indexnow.apiKey.label">
+				<source>IndexNow API Key</source>
+			</trans-unit>
+			<trans-unit id="settings.indexnow.apiKey.description">
+				<source>Per-site API key for the IndexNow search engine verification endpoint. Obtain a key at https://www.indexnow.org/.</source>
+			</trans-unit>
+		</body>
+	</file>
+</xliff>
