@@ -16,7 +16,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use TYPO3\CMS\Core\Http\HtmlResponse;
-use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Core\Site\Entity\Site;
 
 /**
  * Serves the IndexNow API key verification file at /{apiKey}.txt
@@ -34,7 +34,7 @@ final readonly class ApiKeyVerificationMiddleware implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $site = $request->getAttribute('site');
-        if (!$site instanceof SiteInterface) {
+        if (!$site instanceof Site) {
             return $handler->handle($request);
         }
 
@@ -45,6 +45,10 @@ final readonly class ApiKeyVerificationMiddleware implements MiddlewareInterface
 
         $serverParams = $request->getServerParams();
         $requestPath = parse_url($serverParams['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
+        if (!is_string($requestPath)) {
+           return $handler->handle($request);
+        }
+
         $path = ltrim($requestPath, '/');
         $sitePath = ltrim($site->getBase()->getPath(), '/');
         if ($sitePath !== '' && str_starts_with($path, $sitePath)) {
