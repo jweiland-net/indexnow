@@ -18,6 +18,9 @@ return [
             'after' => [
                 'typo3/cms-frontend/site',
             ],
+            'before' => [
+                'typo3/cms-frontend/maintenance-mode',
+            ],
         ],
     ],
 ];
