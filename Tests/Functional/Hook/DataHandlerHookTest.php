@@ -272,7 +272,7 @@ class DataHandlerHookTest extends FunctionalTestCase
             ],
         );
 
-        $providePreviewUrlEvent->setPreviewUrl('https://example.com/news/123');
+        $providePreviewUrlEvent->addPreviewUrl('https://example.com/news/123');
 
         $eventDispatcherMock = $this->createMock(EventDispatcher::class);
         $eventDispatcherMock
@@ -317,5 +317,82 @@ class DataHandlerHookTest extends FunctionalTestCase
         ];
 
         $subject->processDatamap_beforeStart($dataHandler);
+    }
+
+    #[Test]
+    public function hookWillInsertMultipleStackRecordsForRecordRenderedOnSeveralPages(): void
+    {
+        $modifyPageUidEvent = new ModifyPageUidEvent(
+            [],
+            'pages',
+            16,
+            [],
+        );
+
+        $providePreviewUrlEvent = new ProvidePreviewUrlEvent(
+            table: 'tx_faq_domain_model_question',
+            recordUid: 123,
+            record: [
+                'uid' => 123,
+                'pid' => 16,
+            ],
+        );
+
+        // Same FAQ record rendered on two different pages/sites.
+        $providePreviewUrlEvent->addPreviewUrl('https://example.com/faq/123');
+        $providePreviewUrlEvent->addPreviewUrl('https://other-site.com/faq/123', 42);
+
+        $eventDispatcherMock = $this->createMock(EventDispatcher::class);
+        $eventDispatcherMock
+            ->expects(self::atLeastOnce())
+            ->method('dispatch')
+            ->willReturnCallback(static function (object $event) use ($providePreviewUrlEvent, $modifyPageUidEvent): object {
+                if ($event instanceof ProvidePreviewUrlEvent) {
+                    return $providePreviewUrlEvent;
+                }
+
+                if ($event instanceof ModifyPageUidEvent) {
+                    return $modifyPageUidEvent;
+                }
+
+                return $event;
+            });
+
+        $subject = new DataHandlerHook(
+            $this->stackRepositoryMock,
+            $this->get(PageRenderer::class),
+            $this->get(FlashMessageService::class),
+            $eventDispatcherMock,
+        );
+
+        $insertedUrls = [];
+        $this->stackRepositoryMock
+            ->expects(self::exactly(2))
+            ->method('insert')
+            ->willReturnCallback(static function (string $url, int $pageUid) use (&$insertedUrls): void {
+                $insertedUrls[] = [$url, $pageUid];
+            });
+
+        /** @var DataHandler $dataHandler */
+        $dataHandler = $this->get(DataHandler::class);
+        $dataHandler->datamap = [
+            'pages' => [
+                'NEW1234' => [
+                    'uid' => 2,
+                    'pid' => 1,
+                    'title' => 'Plugin: events2',
+                ],
+            ],
+        ];
+
+        $subject->processDatamap_beforeStart($dataHandler);
+
+        self::assertSame(
+            [
+                ['https://example.com/faq/123', 16],
+                ['https://other-site.com/faq/123', 42],
+            ],
+            $insertedUrls,
+        );
     }
 }

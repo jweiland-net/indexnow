@@ -93,6 +93,109 @@ class ProvidePreviewUrlEventTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function getPreviewUrlsWillInitiallyReturnEmptyArray(): void
+    {
+        $subject = new ProvidePreviewUrlEvent(
+            table: 'tx_news_domain_model_news',
+            recordUid: 123,
+            record: [
+                'uid' => 123,
+            ],
+        );
+
+        self::assertSame(
+            [],
+            $subject->getPreviewUrls(),
+        );
+    }
+
+    #[Test]
+    public function addPreviewUrlWillAddPreviewUrl(): void
+    {
+        $subject = new ProvidePreviewUrlEvent(
+            table: 'tx_news_domain_model_news',
+            recordUid: 123,
+            record: [
+                'uid' => 123,
+            ],
+        );
+
+        $subject->addPreviewUrl('https://example.com/preview/123');
+
+        $previewUrls = $subject->getPreviewUrls();
+
+        self::assertCount(
+            1,
+            $previewUrls,
+        );
+        self::assertSame(
+            'https://example.com/preview/123',
+            $previewUrls[0]->getUrl(),
+        );
+        self::assertNull(
+            $previewUrls[0]->getPageUid(),
+        );
+    }
+
+    #[Test]
+    public function addPreviewUrlWithPageUidWillAddPreviewUrlWithPageUid(): void
+    {
+        $subject = new ProvidePreviewUrlEvent(
+            table: 'tx_news_domain_model_news',
+            recordUid: 123,
+            record: [
+                'uid' => 123,
+            ],
+        );
+
+        $subject->addPreviewUrl('https://other-site.com/preview/123', 16);
+
+        self::assertSame(
+            16,
+            $subject->getPreviewUrls()[0]->getPageUid(),
+        );
+    }
+
+    #[Test]
+    public function addPreviewUrlCanBeCalledMultipleTimes(): void
+    {
+        $subject = new ProvidePreviewUrlEvent(
+            table: 'tx_news_domain_model_news',
+            recordUid: 123,
+            record: [
+                'uid' => 123,
+            ],
+        );
+
+        $subject->addPreviewUrl('https://example.com/preview/123');
+        $subject->addPreviewUrl('https://other-site.com/preview/123', 16);
+
+        self::assertCount(
+            2,
+            $subject->getPreviewUrls(),
+        );
+    }
+
+    #[Test]
+    public function addPreviewUrlWithInvalidUrlWillNotAddPreviewUrl(): void
+    {
+        $subject = new ProvidePreviewUrlEvent(
+            table: 'tx_news_domain_model_news',
+            recordUid: 123,
+            record: [
+                'uid' => 123,
+            ],
+        );
+
+        $subject->addPreviewUrl('invalid-url');
+
+        self::assertSame(
+            [],
+            $subject->getPreviewUrls(),
+        );
+    }
+
+    #[Test]
     public function getPreviewUrlWillInitiallyReturnEmptyString(): void
     {
         $subject = new ProvidePreviewUrlEvent(
@@ -144,6 +247,31 @@ class ProvidePreviewUrlEventTest extends FunctionalTestCase
         self::assertSame(
             '',
             $subject->getPreviewUrl(),
+        );
+    }
+
+    #[Test]
+    public function setPreviewUrlIsReflectedInGetPreviewUrls(): void
+    {
+        $subject = new ProvidePreviewUrlEvent(
+            table: 'tx_news_domain_model_news',
+            recordUid: 123,
+            record: [
+                'uid' => 123,
+            ],
+        );
+
+        $subject->setPreviewUrl('https://example.com/preview/123');
+
+        $previewUrls = $subject->getPreviewUrls();
+
+        self::assertCount(
+            1,
+            $previewUrls,
+        );
+        self::assertSame(
+            'https://example.com/preview/123',
+            $previewUrls[0]->getUrl(),
         );
     }
 }
