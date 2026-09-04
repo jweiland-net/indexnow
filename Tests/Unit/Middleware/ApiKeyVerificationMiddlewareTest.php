@@ -15,8 +15,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use TYPO3\CMS\Core\Http\ServerRequest;
-use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\NullSite;
+use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteSettings;
 use TYPO3\TestingFramework\Core\Unit\UnitTestCase;
 
@@ -95,7 +95,7 @@ class ApiKeyVerificationMiddlewareTest extends UnitTestCase
     }
 
     #[Test]
-    public function processPassesThroughWithInvalidPath(): void
+    public function processPassesThroughWithInvalidRequestUri(): void
     {
         $handlerResponse = $this->createMock(ResponseInterface::class);
         $this->handlerMock->expects(self::once())->method('handle')->willReturn($handlerResponse);

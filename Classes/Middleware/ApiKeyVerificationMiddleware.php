@@ -46,7 +46,7 @@ final readonly class ApiKeyVerificationMiddleware implements MiddlewareInterface
         $serverParams = $request->getServerParams();
         $requestPath = parse_url($serverParams['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
         if (!is_string($requestPath)) {
-           return $handler->handle($request);
+            return $handler->handle($request);
         }
 
         $path = ltrim($requestPath, '/');
