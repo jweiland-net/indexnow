@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace JWeiland\IndexNow\Hook;
 
+use JWeiland\IndexNow\Domain\Model\PreviewUrl;
 use JWeiland\IndexNow\Domain\Repository\StackRepository;
 use JWeiland\IndexNow\Event\ModifyPageUidEvent;
 use JWeiland\IndexNow\Event\ProvidePreviewUrlEvent;
@@ -78,13 +79,12 @@ class DataHandlerHook
                     new ProvidePreviewUrlEvent($table, $recordUid, $mergedRecord),
                 );
 
-                $previewUrl = $providePreviewUrlEvent->getPreviewUrl() ?: $this->getPreviewUrl($pageUid, $sysLanguageUid);
-
-                if ($previewUrl === null || $previewUrl === '') {
-                    continue;
+                foreach ($this->collectPreviewUrls($providePreviewUrlEvent, $pageUid, $sysLanguageUid) as $previewUrl) {
+                    $this->stackRepository->insert(
+                        $previewUrl->getUrl(),
+                        $previewUrl->getPageUid() ?? $pageUid,
+                    );
                 }
-
-                $this->stackRepository->insert($previewUrl, $pageUid);
             }
         }
     }
@@ -109,6 +109,32 @@ class DataHandlerHook
         }
 
         return (int)($backendUser->user['uid'] ?? 0) > 0;
+    }
+
+    /**
+     * Falls back to the single preview URL built via PreviewUriBuilder
+     * unless a listener already contributed at least one URL via
+     * ProvidePreviewUrlEvent::addPreviewUrl(), for example because the
+     * record is rendered on several pages or even several sites.
+     *
+     * @return PreviewUrl[]
+     */
+    protected function collectPreviewUrls(
+        ProvidePreviewUrlEvent $providePreviewUrlEvent,
+        int $pageUid,
+        int $sysLanguageUid,
+    ): array {
+        $previewUrls = $providePreviewUrlEvent->getPreviewUrls();
+        if ($previewUrls !== []) {
+            return $previewUrls;
+        }
+
+        $previewUrl = $this->getPreviewUrl($pageUid, $sysLanguageUid);
+        if ($previewUrl === null || $previewUrl === '') {
+            return [];
+        }
+
+        return [new PreviewUrl($previewUrl, $pageUid)];
     }
 
     protected function getPageUid(array $recordToBeStored, string $table): int
