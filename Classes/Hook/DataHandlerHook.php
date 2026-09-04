@@ -17,6 +17,7 @@ use JWeiland\IndexNow\Event\ProvidePreviewUrlEvent;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Routing\PreviewUriBuilder;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
@@ -39,6 +40,10 @@ class DataHandlerHook
 
     public function processDatamap_beforeStart(DataHandler $dataHandler): void
     {
+        if (!$this->isContextSafeForIndexNow()) {
+            return;
+        }
+
         foreach ($dataHandler->datamap as $table => $records) {
             foreach ($records as $recordUid => $record) {
                 $mergedRecord = $this->getMergedRecord($recordUid, $table, $record);
@@ -82,6 +87,28 @@ class DataHandlerHook
                 $this->stackRepository->insert($previewUrl, $pageUid);
             }
         }
+    }
+
+    /**
+     * PreviewUriBuilder::buildUri() requires a real, persisted backend
+     * user session (FormProtection). DataHandler can also run without
+     * one, for example via CLI commands or MCP servers that construct
+     * a stub BackendUserAuthentication. IndexNow is a passive side
+     * effect of an editor's change and must never abort it, so skip
+     * processing entirely in such contexts.
+     */
+    protected function isContextSafeForIndexNow(): bool
+    {
+        $backendUser = $GLOBALS['BE_USER'] ?? null;
+        if (!$backendUser instanceof BackendUserAuthentication) {
+            return false;
+        }
+
+        if ((int)($backendUser->workspace ?? 0) !== 0) {
+            return false;
+        }
+
+        return (int)($backendUser->user['uid'] ?? 0) > 0;
     }
 
     protected function getPageUid(array $recordToBeStored, string $table): int
