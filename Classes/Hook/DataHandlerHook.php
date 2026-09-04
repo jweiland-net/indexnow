@@ -79,7 +79,7 @@ class DataHandlerHook
                     continue;
                 }
 
-                $this->stackRepository->insert($previewUrl);
+                $this->stackRepository->insert($previewUrl, $pageUid);
             }
         }
     }

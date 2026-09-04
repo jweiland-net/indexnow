@@ -3,8 +3,9 @@
 #
 CREATE TABLE tx_indexnow_stack
 (
-	url      text,
-	url_hash CHAR(40) NOT NULL,
+	url         text,
+	url_hash    CHAR(40) NOT NULL,
+	target_pid  int(11) DEFAULT 0 NOT NULL,
 
 	UNIQUE KEY unique_url_hash (url_hash)
 );

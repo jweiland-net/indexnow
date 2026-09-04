@@ -164,7 +164,7 @@ class DataHandlerHookTest extends FunctionalTestCase
         $this->stackRepositoryMock
             ->expects(self::atLeastOnce())
             ->method('insert')
-            ->with(self::identicalTo('https://example.com/'));
+            ->with(self::identicalTo('https://example.com/'), self::identicalTo(2));
 
         /** @var DataHandler $dataHandler */
         $dataHandler = $this->get(DataHandler::class);
@@ -230,7 +230,7 @@ class DataHandlerHookTest extends FunctionalTestCase
         $this->stackRepositoryMock
             ->expects(self::atLeastOnce())
             ->method('insert')
-            ->with(self::identicalTo('https://example.com/news/123'));
+            ->with(self::identicalTo('https://example.com/news/123'), self::identicalTo(16));
 
         /** @var DataHandler $dataHandler */
         $dataHandler = $this->get(DataHandler::class);

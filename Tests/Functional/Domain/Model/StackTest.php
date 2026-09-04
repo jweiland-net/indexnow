@@ -53,6 +53,22 @@ class StackTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function getTargetPidGetsTargetPid(): void
+    {
+        $config = [
+            'uid' => 123,
+            'url' => 'https://example.com/',
+            'targetPid' => 456,
+        ];
+        $subject = new Stack(...$config);
+
+        self::assertSame(
+            456,
+            $subject->getTargetPid(),
+        );
+    }
+
+    #[Test]
     public function hasValidUrlWithInvalidUrlReturnsFalse(): void
     {
         $config = [
