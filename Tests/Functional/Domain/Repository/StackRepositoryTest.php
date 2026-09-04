@@ -82,7 +82,7 @@ class StackRepositoryTest extends FunctionalTestCase
     #[Test]
     public function insertWillNotInsertDuplicateStackRecord(): void
     {
-        $this->subject->insert('https://example.com/');
+        $this->subject->insert('https://example.com/', 1);
 
         $connection = $this->getConnectionPool()->getConnectionForTable(StackRepository::TABLE);
         $numberOfRecords = $connection->count(
@@ -100,7 +100,7 @@ class StackRepositoryTest extends FunctionalTestCase
     #[Test]
     public function insertWillInsertStackRecord(): void
     {
-        $this->subject->insert('https://typo3.com/');
+        $this->subject->insert('https://typo3.com/', 1);
 
         $connection = $this->getConnectionPool()->getConnectionForTable(StackRepository::TABLE);
         $numberOfRecords = $connection->count(

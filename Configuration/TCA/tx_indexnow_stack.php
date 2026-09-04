@@ -16,7 +16,7 @@ return [
         'hideTable' => true,
     ],
     'types' => [
-        '1' => ['showitem' => 'url'],
+        '1' => ['showitem' => 'url, target_pid'],
     ],
     'palettes' => [],
     'columns' => [
@@ -34,6 +34,12 @@ return [
         ],
         'url' => [
             'label' => 'URL',
+            'config' => [
+                'type' => 'passthrough',
+            ],
+        ],
+        'target_pid' => [
+            'label' => 'Target PID',
             'config' => [
                 'type' => 'passthrough',
             ],

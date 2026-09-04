@@ -18,6 +18,7 @@ class Stack
     public function __construct(
         private readonly int $uid,
         private readonly string $url,
+        private readonly int $targetPid = 0,
     ) {}
 
     public function getUid(): int
@@ -28,6 +29,11 @@ class Stack
     public function getUrl(): string
     {
         return trim($this->url);
+    }
+
+    public function getTargetPid(): int
+    {
+        return $this->targetPid;
     }
 
     public function hasValidUrl(): bool

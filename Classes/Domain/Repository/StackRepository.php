@@ -38,7 +38,7 @@ class StackRepository
         $queryBuilder = $this->getQueryBuilder();
 
         $statement = $queryBuilder
-            ->select('uid', 'url')
+            ->select('uid', 'url', 'target_pid')
             ->from(self::TABLE)
             ->executeQuery();
 
@@ -49,6 +49,7 @@ class StackRepository
                 $urlRecords[] = new Stack(
                     (int)$urlRecord['uid'],
                     (string)$urlRecord['url'],
+                    (int)$urlRecord['target_pid'],
                 );
             }
         } catch (Exception) {
@@ -72,7 +73,7 @@ class StackRepository
             ->executeStatement();
     }
 
-    public function insert(string $url): void
+    public function insert(string $url, int $pageUid): void
     {
         if (!$this->hasUrl($url)) {
             $now = time();
@@ -82,6 +83,7 @@ class StackRepository
                 ->insert(self::TABLE)
                 ->values([
                     'url' => $url,
+                    'target_pid' => $pageUid,
                     'tstamp' => $now,
                     'crdate' => $now,
                     'url_hash' => $this->hash($url),
