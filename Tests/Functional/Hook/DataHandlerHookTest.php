@@ -157,6 +157,78 @@ class DataHandlerHookTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function hookWillNotBeProcessedWithoutBackendUser(): void
+    {
+        $this->stackRepositoryMock
+            ->expects(self::never())
+            ->method('insert');
+
+        unset($GLOBALS['BE_USER']);
+
+        /** @var DataHandler $dataHandler */
+        $dataHandler = $this->get(DataHandler::class);
+        $dataHandler->datamap = [
+            'pages' => [
+                'NEW1234' => [
+                    'uid' => 2,
+                    'pid' => 1,
+                    'title' => 'Plugin: events2',
+                ],
+            ],
+        ];
+
+        $this->subject->processDatamap_beforeStart($dataHandler);
+    }
+
+    #[Test]
+    public function hookWillNotBeProcessedInNonLiveWorkspace(): void
+    {
+        $this->stackRepositoryMock
+            ->expects(self::never())
+            ->method('insert');
+
+        $GLOBALS['BE_USER']->workspace = 1;
+
+        /** @var DataHandler $dataHandler */
+        $dataHandler = $this->get(DataHandler::class);
+        $dataHandler->datamap = [
+            'pages' => [
+                'NEW1234' => [
+                    'uid' => 2,
+                    'pid' => 1,
+                    'title' => 'Plugin: events2',
+                ],
+            ],
+        ];
+
+        $this->subject->processDatamap_beforeStart($dataHandler);
+    }
+
+    #[Test]
+    public function hookWillNotBeProcessedWithoutAuthenticatedUser(): void
+    {
+        $this->stackRepositoryMock
+            ->expects(self::never())
+            ->method('insert');
+
+        $GLOBALS['BE_USER']->user = [];
+
+        /** @var DataHandler $dataHandler */
+        $dataHandler = $this->get(DataHandler::class);
+        $dataHandler->datamap = [
+            'pages' => [
+                'NEW1234' => [
+                    'uid' => 2,
+                    'pid' => 1,
+                    'title' => 'Plugin: events2',
+                ],
+            ],
+        ];
+
+        $this->subject->processDatamap_beforeStart($dataHandler);
+    }
+
+    #[Test]
     public function hookWillInsertNewStackRecord(): void
     {
         // PreviewUriBuilder::create is called statically in DataHandlerHook
