@@ -16,6 +16,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Site\Entity\Site;
+use TYPO3\CMS\Core\Site\Entity\NullSite;
 use TYPO3\CMS\Core\Site\Entity\SiteSettings;
 use TYPO3\TestingFramework\Core\Unit\UnitTestCase;
 
@@ -73,6 +74,34 @@ class ApiKeyVerificationMiddlewareTest extends UnitTestCase
 
         $site = new Site('test', 1, ['base' => 'https://example.com/'], SiteSettings::createFromSettingsTree([]));
         $request = (new ServerRequest('https://example.com/some-key.txt', 'GET', 'php://input', [], ['REQUEST_URI' => '/some-key.txt']))
+            ->withAttribute('site', $site);
+        $response = $this->subject->process($request, $this->handlerMock);
+
+        self::assertSame($handlerResponse, $response);
+    }
+
+    #[Test]
+    public function processPassesThroughWithNullSite(): void
+    {
+        $handlerResponse = $this->createMock(ResponseInterface::class);
+        $this->handlerMock->expects(self::once())->method('handle')->willReturn($handlerResponse);
+
+        $site = new NullSite();
+        $request = (new ServerRequest('https://wrongsite.com/some-page', 'GET', 'php://input', [], ['REQUEST_URI' => '/some-page']))
+            ->withAttribute('site', $site);
+        $response = $this->subject->process($request, $this->handlerMock);
+
+        self::assertSame($handlerResponse, $response);
+    }
+
+    #[Test]
+    public function processPassesThroughWithInvalidPath(): void
+    {
+        $handlerResponse = $this->createMock(ResponseInterface::class);
+        $this->handlerMock->expects(self::once())->method('handle')->willReturn($handlerResponse);
+
+        $site = $this->makeSite('https://example.com/', 'my-api-key');
+        $request = (new ServerRequest('https://example.com/some-page', 'GET', 'php://input', [], ['REQUEST_URI' => 'htttps:////this-is-not-a-valid-url']))
             ->withAttribute('site', $site);
         $response = $this->subject->process($request, $this->handlerMock);
 
