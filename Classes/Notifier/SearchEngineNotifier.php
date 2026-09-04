@@ -16,8 +16,10 @@ use JWeiland\IndexNow\Configuration\Exception\ApiKeyNotAvailableException;
 use JWeiland\IndexNow\Configuration\ExtConf;
 use JWeiland\IndexNow\Domain\Model\Stack;
 use Psr\Log\LoggerInterface;
+use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Http\RequestFactory;
 use TYPO3\CMS\Core\Http\Uri;
+use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\HttpUtility;
 
@@ -33,6 +35,7 @@ class SearchEngineNotifier
 
     public function __construct(
         protected RequestFactory $requestFactory,
+        protected SiteFinder $siteFinder,
         protected ExtConf $extConf,
         protected LoggerInterface $logger,
     ) {}
@@ -115,7 +118,7 @@ class SearchEngineNotifier
         $uri = new Uri($this->extConf->getSearchEngineEndpoint());
         $uri = $uri->withQuery(HttpUtility::buildQueryString([
             'url' => $stack->getUrl(),
-            'key' => $this->extConf->getApiKey(),
+            'key' => $this->getApiKeyForStack($stack),
         ]));
 
         return (string)$uri;
@@ -123,11 +126,16 @@ class SearchEngineNotifier
 
     protected function notifyGroupedStacks(array $groupedStacks, string $host): bool
     {
+        if ($groupedStacks === []) {
+            return false;
+        }
+
         try {
+            $apiKey = $this->getApiKeyForStack(reset($groupedStacks));
             $postData = [
                 'host' => $host,
-                'key' => $this->extConf->getApiKey(),
-                'keyLocation' => 'https://' . $host . '/' . $this->extConf->getApiKey() . '.txt',
+                'key' => $apiKey,
+                'keyLocation' => 'https://' . $host . '/' . $apiKey . '.txt',
                 'urlList' => $this->getUrlsFromGroupedStacks($groupedStacks),
             ];
         } catch (ApiKeyNotAvailableException) {
@@ -168,6 +176,31 @@ class SearchEngineNotifier
         }
 
         return false;
+    }
+
+    /**
+     * @throws ApiKeyNotAvailableException
+     */
+    protected function getApiKeyForStack(Stack $stack): string
+    {
+        try {
+            $site = $this->siteFinder->getSiteByPageId($stack->getTargetPid());
+        } catch (SiteNotFoundException $e) {
+            throw new ApiKeyNotAvailableException(
+                sprintf('No site found for page "%d": %s', $stack->getTargetPid(), $e->getMessage()),
+                1636752398,
+            );
+        }
+
+        $apiKey = (string)$site->getSettings()->get('indexnow.apiKey', '');
+        if ($apiKey === '') {
+            throw new ApiKeyNotAvailableException(
+                sprintf('API key for indexnow not set in settings of site "%s"', $site->getIdentifier()),
+                1636752398,
+            );
+        }
+
+        return $apiKey;
     }
 
     /**

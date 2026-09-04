@@ -17,6 +17,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use TYPO3\CMS\Core\Http\RequestFactory;
 use TYPO3\CMS\Core\Http\Response;
 use TYPO3\CMS\Core\Log\Logger;
+use TYPO3\CMS\Core\Site\Entity\Site;
+use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
@@ -25,6 +27,8 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 class SearchEngineNotifierTest extends FunctionalTestCase
 {
     public RequestFactory|MockObject $requestFactoryMock;
+
+    public SiteFinder|MockObject $siteFinderMock;
 
     public Logger|MockObject $loggerMock;
 
@@ -37,6 +41,7 @@ class SearchEngineNotifierTest extends FunctionalTestCase
         parent::setUp();
 
         $this->requestFactoryMock = $this->createMock(RequestFactory::class);
+        $this->siteFinderMock = $this->createMock(SiteFinder::class);
         $this->loggerMock = $this->createMock(Logger::class);
     }
 
@@ -44,10 +49,23 @@ class SearchEngineNotifierTest extends FunctionalTestCase
     {
         unset(
             $this->requestFactoryMock,
+            $this->siteFinderMock,
             $this->loggerMock,
         );
 
         parent::tearDown();
+    }
+
+    protected function getSiteWithApiKey(string $identifier, string $apiKey): Site
+    {
+        return new Site($identifier, 1, [
+            'base' => 'https://' . $identifier . '/',
+            'settings' => [
+                'indexnow' => [
+                    'apiKey' => $apiKey,
+                ],
+            ],
+        ]);
     }
 
     #[Test]
@@ -60,6 +78,7 @@ class SearchEngineNotifierTest extends FunctionalTestCase
 
         $subject = new SearchEngineNotifier(
             $this->requestFactoryMock,
+            $this->siteFinderMock,
             new ExtConf(),
             $this->loggerMock,
         );
@@ -86,22 +105,30 @@ class SearchEngineNotifierTest extends FunctionalTestCase
             ->willReturnMap([
                 ['https://www.bing.com/indexnow?url=https%3A%2F%2Fexample.com%2Fevents2&key=SuperSafeApiKey', $response],
                 ['https://www.bing.com/indexnow?url=https%3A%2F%2Fexample.com%2Fmaps2&key=SuperSafeApiKey', $response],
-                ['https://www.bing.com/indexnow?url=https%3A%2F%2Ftypo3.org%2F&key=SuperSafeApiKey', $response],
+                ['https://www.bing.com/indexnow?url=https%3A%2F%2Ftypo3.org%2F&key=OtherSafeApiKey', $response],
+            ]);
+
+        $this->siteFinderMock
+            ->expects(self::atLeastOnce())
+            ->method('getSiteByPageId')
+            ->willReturnMap([
+                [10, $this->getSiteWithApiKey('example', 'SuperSafeApiKey')],
+                [20, $this->getSiteWithApiKey('typo3', 'OtherSafeApiKey')],
             ]);
 
         $subject = new SearchEngineNotifier(
             $this->requestFactoryMock,
+            $this->siteFinderMock,
             new ExtConf(
-                apiKey: 'SuperSafeApiKey',
                 notifyBatchMode: false,
             ),
             $this->loggerMock,
         );
 
         $stackStorage = new \SplObjectStorage();
-        $stackStorage->attach(new Stack(1, 'https://example.com/events2'));
-        $stackStorage->attach(new Stack(2, 'https://example.com/maps2'));
-        $stackStorage->attach(new Stack(3, 'https://typo3.org/'));
+        $stackStorage->attach(new Stack(1, 'https://example.com/events2', 10));
+        $stackStorage->attach(new Stack(2, 'https://example.com/maps2', 10));
+        $stackStorage->attach(new Stack(3, 'https://typo3.org/', 20));
 
         self::assertTrue(
             $subject->notify($stackStorage),
@@ -126,21 +153,29 @@ class SearchEngineNotifierTest extends FunctionalTestCase
             ->method('request')
             ->willReturnMap([
                 ['https://www.bing.com/indexnow?url=https%3A%2F%2Fexample.com%2Fevents2&key=SuperSafeApiKey', $response],
-                ['https://www.bing.com/indexnow?url=https%3A%2F%2Ftypo3.org%2F&key=SuperSafeApiKey', $response],
+                ['https://www.bing.com/indexnow?url=https%3A%2F%2Ftypo3.org%2F&key=OtherSafeApiKey', $response],
+            ]);
+
+        $this->siteFinderMock
+            ->expects(self::atLeastOnce())
+            ->method('getSiteByPageId')
+            ->willReturnMap([
+                [10, $this->getSiteWithApiKey('example', 'SuperSafeApiKey')],
+                [20, $this->getSiteWithApiKey('typo3', 'OtherSafeApiKey')],
             ]);
 
         $subject = new SearchEngineNotifier(
             $this->requestFactoryMock,
+            $this->siteFinderMock,
             new ExtConf(
-                apiKey: 'SuperSafeApiKey',
                 notifyBatchMode: true,
             ),
             $this->loggerMock,
         );
 
         $stackStorage = new \SplObjectStorage();
-        $stackStorage->attach(new Stack(1, 'https://example.com/events2'));
-        $stackStorage->attach(new Stack(3, 'https://typo3.org/'));
+        $stackStorage->attach(new Stack(1, 'https://example.com/events2', 10));
+        $stackStorage->attach(new Stack(3, 'https://typo3.org/', 20));
 
         self::assertTrue(
             $subject->notify($stackStorage),
@@ -182,19 +217,25 @@ class SearchEngineNotifierTest extends FunctionalTestCase
                 ]),
             );
 
+        $this->siteFinderMock
+            ->expects(self::atLeastOnce())
+            ->method('getSiteByPageId')
+            ->with(10)
+            ->willReturn($this->getSiteWithApiKey('example', 'SuperSafeApiKey'));
+
         $subject = new SearchEngineNotifier(
             $this->requestFactoryMock,
+            $this->siteFinderMock,
             new ExtConf(
-                apiKey: 'SuperSafeApiKey',
                 notifyBatchMode: true,
             ),
             $this->loggerMock,
         );
 
         $stackStorage = new \SplObjectStorage();
-        $stackStorage->attach(new Stack(1, 'https://example.com/events2'));
-        $stackStorage->attach(new Stack(2, 'https://example.com/maps2'));
-        $stackStorage->attach(new Stack(3, 'https://example.com/indexnow'));
+        $stackStorage->attach(new Stack(1, 'https://example.com/events2', 10));
+        $stackStorage->attach(new Stack(2, 'https://example.com/maps2', 10));
+        $stackStorage->attach(new Stack(3, 'https://example.com/indexnow', 10));
 
         self::assertTrue(
             $subject->notify($stackStorage),
