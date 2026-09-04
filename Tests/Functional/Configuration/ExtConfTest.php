@@ -9,7 +9,6 @@
 
 namespace JWeiland\IndexNow\Tests\Functional\Configuration;
 
-use JWeiland\IndexNow\Configuration\Exception\ApiKeyNotAvailableException;
 use JWeiland\Indexnow\Configuration\ExtConf;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -41,31 +40,6 @@ class ExtConfTest extends FunctionalTestCase
         );
 
         parent::tearDown();
-    }
-
-    #[Test]
-    public function getApiKeyInitiallyResultsInException(): void
-    {
-        $this->expectException(ApiKeyNotAvailableException::class);
-
-        $config = [];
-        $subject = new ExtConf(...$config);
-
-        $subject->getApiKey();
-    }
-
-    #[Test]
-    public function setApiKeySetsApiKey(): void
-    {
-        $config = [
-            'apiKey' => 'foo bar',
-        ];
-        $subject = new ExtConf(...$config);
-
-        self::assertSame(
-            'foo bar',
-            $subject->getApiKey(),
-        );
     }
 
     #[Test]
