@@ -6,6 +6,7 @@
 [![Monthly Downloads][extension-monthly-downloads]][extension-packagist-url]
 [![TYPO3 12.4][TYPO3-12-shield]][TYPO3-12-url]
 [![TYPO3 13.4][TYPO3-13-shield]][TYPO3-13-url]
+[![TYPO3 14.3][TYPO3-14-shield]][TYPO3-14-url]
 
 > The extension is in a heavy development phase. Breaking changes can be expected between releases.
 
@@ -237,3 +238,7 @@ For commercial support, please contact us at [support@jweiland.net](support@jwei
 [TYPO3-13-url]: https://get.typo3.org/version/13
 
 [TYPO3-13-shield]: https://img.shields.io/badge/TYPO3-13.4-green.svg?style=for-the-badge&logo=typo3
+
+[TYPO3-14-url]: https://get.typo3.org/version/14
+
+[TYPO3-14-shield]: https://img.shields.io/badge/TYPO3-14.3-green.svg?style=for-the-badge&logo=typo3
