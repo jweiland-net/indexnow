@@ -46,3 +46,4 @@ composer.lock
 /.Build
 /composer.json.orig
 /composer.json.testing
+/var
