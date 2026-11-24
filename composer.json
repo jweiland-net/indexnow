@@ -1,9 +1,8 @@
 {
 	"name": "jweiland/indexnow",
 	"description": "TYPO3 extension to inform various search engines over IndexNow endpoint about content updates",
-	"type": "typo3-cms-extension",
 	"license": "GPL-2.0-or-later",
-	"homepage": "https://jweiland.net",
+	"type": "typo3-cms-extension",
 	"authors": [
 		{
 			"name": "Stefan Froemken",
@@ -14,13 +13,14 @@
 			"email": "hlatheef@jweiland.net"
 		}
 	],
+	"homepage": "https://jweiland.net",
 	"require": {
-		"typo3/cms-core": "^12.4.31 || ^13.4.12"
+		"typo3/cms-core": "^12.4.31 || ^13.4.12 || ^14.3"
 	},
 	"require-dev": {
 		"ergebnis/composer-normalize": "^2.44",
 		"typo3/coding-standards": "^0.8",
-		"typo3/testing-framework": "^8.2"
+		"typo3/testing-framework": "^8.2 || ^9.0"
 	},
 	"replace": {
 		"typo3-ter/indexnow": "self.version"
@@ -46,8 +46,12 @@
 	},
 	"extra": {
 		"typo3/cms": {
+			"Package": {
+				"providesPackages": {}
+			},
 			"app-dir": ".Build",
 			"extension-key": "indexnow",
+			"version": "0.0.11",
 			"web-dir": ".Build/Web"
 		}
 	}
