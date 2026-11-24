@@ -201,6 +201,13 @@ Options:
             - 15    maintained until 2027-11-11
             - 16    maintained until 2028-11-09
 
+    -t <13|14>
+        Only with -s composerUpdate
+        Specifies the TYPO3 core major version to install
+        (TYPO3 12.4 is not available: composer blocks its public releases due to security advisories)
+            - 13: use TYPO3 13.4
+            - 14: use TYPO3 14.3 (default)
+
     -p <8.2|8.3|8.4>
         Specifies the PHP minor version to be used
             - 8.2: use PHP 8.2 (default)
@@ -230,6 +237,10 @@ Options:
         Show this help.
 
 Examples:
+    # Install TYPO3 13.4 with PHP 8.2 and run unit tests
+    ./Build/Scripts/runTests.sh -p 8.2 -t 13 -s composerUpdate
+    ./Build/Scripts/runTests.sh -p 8.2 -s unit
+
     # Run unit tests using PHP 8.2
     ./Build/Scripts/runTests.sh -p 8.2 -s unit
 
@@ -254,6 +265,7 @@ DATABASE_DRIVER=""
 DBMS="sqlite"
 DBMS_VERSION=""
 PHP_VERSION="8.2"
+CORE_VERSION="14"
 PHP_XDEBUG_ON=0
 PHP_XDEBUG_PORT=9003
 CGLCHECK_DRY_RUN=0
@@ -268,7 +280,7 @@ OPTIND=1
 # Array for invalid options
 INVALID_OPTIONS=()
 # Simple option parsing based on getopts (! not getopt)
-while getopts "a:b:d:i:s:p:xy:nhu" OPT; do
+while getopts "a:b:d:i:s:p:t:xy:nhu" OPT; do
     case ${OPT} in
         a)
             DATABASE_DRIVER=${OPTARG}
@@ -292,6 +304,12 @@ while getopts "a:b:d:i:s:p:xy:nhu" OPT; do
             PHP_VERSION=${OPTARG}
             if ! [[ ${PHP_VERSION} =~ ^(8.2|8.3|8.4)$ ]]; then
                 INVALID_OPTIONS+=("p ${OPTARG}")
+            fi
+            ;;
+        t)
+            CORE_VERSION=${OPTARG}
+            if ! [[ ${CORE_VERSION} =~ ^(13|14)$ ]]; then
+                INVALID_OPTIONS+=("t ${OPTARG}")
             fi
             ;;
         x)
@@ -447,7 +465,15 @@ case ${TEST_SUITE} in
         if [ -f "${ROOT_DIR}/composer.json.testing" ]; then
             cp ${ROOT_DIR}/composer.json ${ROOT_DIR}/composer.json.orig
         fi
-        COMMAND=(composer require --no-ansi --no-interaction --no-progress)
+        case ${CORE_VERSION} in
+            13)
+                CORE_CONSTRAINT="^13.4.12"
+                ;;
+            14)
+                CORE_CONSTRAINT="^14.3"
+                ;;
+        esac
+        COMMAND=(composer update --no-ansi --no-interaction --no-progress --with "typo3/cms-core:${CORE_CONSTRAINT}")
         ${CONTAINER_BIN} run ${CONTAINER_COMMON_PARAMS} --name composer-install-${SUFFIX} -e COMPOSER_CACHE_DIR=.Build/.cache/composer -e COMPOSER_ROOT_VERSION=${COMPOSER_ROOT_VERSION} ${IMAGE_PHP} "${COMMAND[@]}"
         SUITE_EXIT_CODE=$?
         cp ${ROOT_DIR}/composer.json ${ROOT_DIR}/composer.json.testing
