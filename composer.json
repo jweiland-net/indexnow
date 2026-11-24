@@ -51,7 +51,7 @@
 			},
 			"app-dir": ".Build",
 			"extension-key": "indexnow",
-			"version": "0.0.11",
+			"version": "0.0.12",
 			"web-dir": ".Build/Web"
 		}
 	}
