@@ -17,8 +17,11 @@ No request leaves the machine: the tests point the IndexNow endpoint to the loca
 
 ## Run
 
+Requires Node.js 24 (see `.nvmrc`).
+
 ```bash
 cd Build/playwright
+nvm use
 npm ci
 TYPO3_BE_USER=indexnow_e2e \
 TYPO3_BE_PASSWORD='<password>' \
