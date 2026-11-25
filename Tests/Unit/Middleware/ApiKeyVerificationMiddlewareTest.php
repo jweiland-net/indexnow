@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the package jweiland/indexnow.
  *
@@ -9,6 +11,7 @@
 
 namespace JWeiland\IndexNow\Tests\Unit\Middleware;
 
+use JWeiland\IndexNow\Configuration\ApiKeyResolver;
 use JWeiland\IndexNow\Middleware\ApiKeyVerificationMiddleware;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -18,6 +21,7 @@ use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Site\Entity\NullSite;
 use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteSettings;
+use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\TestingFramework\Core\Unit\UnitTestCase;
 
 class ApiKeyVerificationMiddlewareTest extends UnitTestCase
@@ -31,7 +35,9 @@ class ApiKeyVerificationMiddlewareTest extends UnitTestCase
         parent::setUp();
 
         $this->handlerMock = $this->createMock(RequestHandlerInterface::class);
-        $this->subject = new ApiKeyVerificationMiddleware();
+        $this->subject = new ApiKeyVerificationMiddleware(
+            new ApiKeyResolver($this->createMock(SiteFinder::class)),
+        );
     }
 
     protected function tearDown(): void
