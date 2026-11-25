@@ -13,15 +13,15 @@ namespace JWeiland\IndexNow\Event;
 
 /**
  * Event to modify the page UID. Useful to prevent re-indexing the page.
- * Return 0 to disable IndexNow request.
+ * Set the page UID to 0 to disable the IndexNow request.
  */
-class ModifyPageUidEvent
+final class ModifyPageUidEvent
 {
     /**
-     * @param array $record This is the record, which is requested to be stored. Coming from DataHandler.
-     * @param string $table This is the table name where the record will be stored
-     * @param int $pageUid This is the page UID. We will use it to create a preview URL for IndexNow request. Set it to 0 to prevent informing IndexNow.
-     * @param array|null $pageRecord To keep your life easy we provide you the full page record. Be careful, in rare cases it can be NULL!
+     * @param array<string, mixed> $record The record, which is requested to be stored. Coming from DataHandler.
+     * @param string $table The table name where the record will be stored
+     * @param int $pageUid The page UID used to create a preview URL. Set it to 0 to prevent informing IndexNow.
+     * @param array<string, mixed>|null $pageRecord The full page record. Be careful, in rare cases it can be NULL!
      */
     public function __construct(
         private readonly array $record,
@@ -30,6 +30,9 @@ class ModifyPageUidEvent
         private readonly ?array $pageRecord,
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getRecord(): array
     {
         return $this->record;
@@ -45,6 +48,9 @@ class ModifyPageUidEvent
         return $this->pageUid;
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
     public function getPageRecord(): ?array
     {
         return $this->pageRecord;
