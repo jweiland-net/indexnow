@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { expect, type Page } from '@playwright/test';
+import { expect, type FrameLocator, type Page } from '@playwright/test';
 
 export const projectDir = path.resolve(process.env.TYPO3_PROJECT_DIR ?? path.join(__dirname, '../../../../../../..'));
 export const apiKey = requireEnv('INDEXNOW_API_KEY');
@@ -25,7 +25,8 @@ function ddev(args: string[]): string {
 }
 
 export function sql(query: string): string {
-  return ddev(['exec', 'mysql', '--batch', '--skip-column-names', '-e', query]).trim();
+  // Only strip trailing line breaks: a trailing tab belongs to an empty value of the last column
+  return ddev(['exec', 'mysql', '--batch', '--skip-column-names', '-e', query]).replace(/\n+$/, '');
 }
 
 export function typo3(...args: string[]): string {
@@ -115,13 +116,94 @@ export async function loginToBackend(page: Page): Promise<void> {
 /**
  * Opens the FormEngine of a page record and saves it unchanged, which runs the DataHandler hook
  */
-export async function savePageRecord(page: Page, pageUid: number): Promise<void> {
-  await page.goto(`/typo3/record/edit?edit[pages][${pageUid}]=edit`);
+type FormEdit = (form: FrameLocator, pageUid: number) => Promise<void>;
+
+let markerCounter = 0;
+
+/**
+ * Changes the translatable field "nav_title" (Alternative Navigation Title) to a unique value
+ */
+export const changeNavTitle: FormEdit = async (form, pageUid) => {
+  await form
+    .locator(`[data-formengine-input-name="data[pages][${pageUid}][nav_title]"]`)
+    .fill(`indexnow-e2e-${Date.now()}-${++markerCounter}`);
+};
+
+/**
+ * Changes the field "layout" (Frontend Layout), which is configured with l10n_mode=exclude.
+ * TYPO3 synchronizes its value into all translations of the page.
+ */
+export function changeFrontendLayout(value: string): FormEdit {
+  return async (form, pageUid) => {
+    await form.getByRole('tab', { name: 'Appearance' }).click();
+    await form.locator(`select[name="data[pages][${pageUid}][layout]"]`).selectOption(value);
+  };
+}
+
+/**
+ * Toggles "Page visible" (field "hidden", displayed inverted) on the "Access" tab
+ */
+export function setPageVisibility(visible: boolean): FormEdit {
+  return async (form, pageUid) => {
+    await form.getByRole('tab', { name: 'Access' }).click();
+    const checkbox = form.locator(`input[type="checkbox"][data-formengine-input-name="data[pages][${pageUid}][hidden]"]`);
+    await checkbox.setChecked(visible);
+  };
+}
+
+/**
+ * Remembers the values of the given page fields and returns a function to restore them
+ */
+export function snapshotPageFields(pageUids: number[], fieldNames: string[]): () => void {
+  const rows = sql(`SELECT uid, ${fieldNames.join(', ')} FROM pages WHERE uid IN (${pageUids.join(', ')})`);
+
+  return () => {
+    for (const row of rows.split('\n').filter((line) => line !== '')) {
+      const [uid, ...values] = row.split('\t');
+      const assignments = fieldNames.map((fieldName, index) => {
+        const value = values[index];
+        return `${fieldName} = ${value === 'NULL' ? 'NULL' : `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`}`;
+      });
+      sql(`UPDATE pages SET ${assignments.join(', ')} WHERE uid = ${Number(uid)}`);
+    }
+  };
+}
+
+/**
+ * Opens the FormEngine of a page record, applies the given edit and saves it, which runs the DataHandler hook.
+ * Without an edit, the record is saved unchanged.
+ */
+export async function savePageRecord(page: Page, pageUid: number, edit?: FormEdit): Promise<void> {
+  const contentFrame = await openRecordForm(page, `/typo3/record/edit?edit[pages][${pageUid}]=edit`);
+
+  if (edit) {
+    await edit(contentFrame, pageUid);
+  }
+
+  await submitRecordForm(page, contentFrame);
+}
+
+/**
+ * Creates a new page below the given parent page via FormEngine
+ */
+export async function createPageRecord(page: Page, parentPageUid: number, title: string): Promise<void> {
+  const contentFrame = await openRecordForm(page, `/typo3/record/edit?edit[pages][${parentPageUid}]=new`);
+  await contentFrame.locator('[data-formengine-input-name^="data[pages][NEW"][data-formengine-input-name$="[title]"]').fill(title);
+
+  await submitRecordForm(page, contentFrame);
+}
+
+async function openRecordForm(page: Page, url: string): Promise<FrameLocator> {
+  await page.goto(url);
 
   // The backend shell renders modules inside the content iframe
   const contentFrame = page.frameLocator('iframe[name="list_frame"]');
   await expect(contentFrame.getByRole('heading', { level: 1 })).toBeVisible();
 
+  return contentFrame;
+}
+
+async function submitRecordForm(page: Page, contentFrame: FrameLocator): Promise<void> {
   await Promise.all([
     page.waitForResponse((response) => response.url().includes('/typo3/record/edit') && response.request().method() === 'POST'),
     contentFrame.getByRole('button', { name: 'Save', exact: true }).click(),

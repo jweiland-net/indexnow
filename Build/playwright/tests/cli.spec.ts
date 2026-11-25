@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import {
   accessLogSize,
   apiKey,
+  changeNavTitle,
   clearStack,
   fetchStack,
   indexNowLogSize,
@@ -10,6 +11,7 @@ import {
   readIndexNowLogSince,
   savePageRecord,
   setExtensionConfiguration,
+  snapshotPageFields,
   sql,
   typo3,
 } from './support/typo3';
@@ -32,6 +34,16 @@ function expectedGetRequest(url: string): string {
 }
 
 test.describe.serial('Sending queued URLs (indexnow:notify)', () => {
+  let restorePageFields: () => void;
+
+  test.beforeAll(() => {
+    restorePageFields = snapshotPageFields([1, subPageUid], ['nav_title']);
+  });
+
+  test.afterAll(() => {
+    restorePageFields();
+  });
+
   test.beforeEach(async ({ page }) => {
     clearStack();
     setExtensionConfiguration('notifyBatchMode', '0');
@@ -44,8 +56,8 @@ test.describe.serial('Sending queued URLs (indexnow:notify)', () => {
   });
 
   test('single mode sends one GET request with url and key per URL and empties the stack', async ({ page }) => {
-    await savePageRecord(page, 1);
-    await savePageRecord(page, subPageUid);
+    await savePageRecord(page, 1, changeNavTitle);
+    await savePageRecord(page, subPageUid, changeNavTitle);
     const subPageUrl = `${baseUrl}${sql(`SELECT slug FROM pages WHERE uid = ${subPageUid}`)}`;
     expect(fetchStack()).toHaveLength(2);
     const indexNowLogMarker = indexNowLogSize();
@@ -61,7 +73,7 @@ test.describe.serial('Sending queued URLs (indexnow:notify)', () => {
 
   test('single mode logs failed requests', async ({ page }) => {
     setExtensionConfiguration('searchEngineEndpoint', failingEndpoint);
-    await savePageRecord(page, 1);
+    await savePageRecord(page, 1, changeNavTitle);
     const indexNowLogMarker = indexNowLogSize();
 
     typo3('indexnow:notify');
@@ -76,8 +88,8 @@ test.describe.serial('Sending queued URLs (indexnow:notify)', () => {
 
   test('batch mode sends all URLs of one host with a single POST request', async ({ page }) => {
     setExtensionConfiguration('notifyBatchMode', '1');
-    await savePageRecord(page, 1);
-    await savePageRecord(page, subPageUid);
+    await savePageRecord(page, 1, changeNavTitle);
+    await savePageRecord(page, subPageUid, changeNavTitle);
     const indexNowLogMarker = indexNowLogSize();
     const accessLogMarker = accessLogSize();
 
@@ -92,8 +104,8 @@ test.describe.serial('Sending queued URLs (indexnow:notify)', () => {
   test('batch mode logs failed requests', async ({ page }) => {
     setExtensionConfiguration('notifyBatchMode', '1');
     setExtensionConfiguration('searchEngineEndpoint', failingEndpoint);
-    await savePageRecord(page, 1);
-    await savePageRecord(page, subPageUid);
+    await savePageRecord(page, 1, changeNavTitle);
+    await savePageRecord(page, subPageUid, changeNavTitle);
     const indexNowLogMarker = indexNowLogSize();
 
     typo3('indexnow:notify');
