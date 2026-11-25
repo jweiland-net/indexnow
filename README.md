@@ -116,8 +116,21 @@ vendor/bin/typo3 indexnow:notify
 
 Just change a value on a page or content element and store the record.
 Internally the page UID will be extracted and will be used to build a preview
-URL. That URL will be bind with the IndexNow API endpoint URL and stored in
-table `tx_indexnow_stack`.
+URL. That URL will be stored in table `tx_indexnow_stack`.
+
+Only records whose content has actually been changed are processed. Saving a
+record without any change does not inform IndexNow. As DataHandler does not
+report, whether MM relations (f.e. `categories`) have really been changed,
+changing only the MM relations of a record does not inform IndexNow, either.
+
+Hidden pages and records on hidden pages are skipped, as their URLs are not
+reachable in frontend. Making a hidden page visible queues its URL. As TYPO3
+creates new pages hidden by default, a new page is queued as soon as it is
+made visible.
+
+If you change a field of a record in the default language, which TYPO3
+synchronizes into its translations (`'l10n_mode' => 'exclude'` or
+`allowLanguageSynchronization`), the URLs of the translations are queued, too.
 
 Now you have to wait until next scheduler task run where all inserted stack
 entries will be processed.
@@ -207,6 +220,14 @@ that issue.
 - `SearchEngineNotifier::notify()` expects a `list<Stack>` instead of `\SplObjectStorage`.
 - Classes of this extension are `final` or `readonly` now. Extending them is not supported anymore.
   Use the provided PSR-14 events instead.
+- Only records whose content has actually been changed are queued. Saving a record without changes
+  does not inform IndexNow anymore.
+- Translations are queued, if TYPO3 synchronized a changed field (`l10n_mode=exclude`) of the default
+  language into them.
+- New pages are queued, too.
+- Hidden pages and records on hidden pages are not queued anymore (`RespectHiddenPagesEventListener`).
+- `DataHandlerHook::processDatamap_beforeStart()` has been replaced by
+  `DataHandlerHook::processDatamap_afterDatabaseOperations()`.
 
 ### Update to Version 0.0.7
 
@@ -218,10 +239,6 @@ that issue.
 
 Delete all records from `tx_indexnow_stack` for a specific page on
 delete (DataHandler).
-
-Creating a new page or content element should call the IndexNow services.
-Currently, only modified pages and content elements will be processed. We
-should use the afterAllDatabaseOperations DataHandler hook instead.
 
 Nice to have: Add a section into EXT:reports to check IndexNow
 configuration health.
