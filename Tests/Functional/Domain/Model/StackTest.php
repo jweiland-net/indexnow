@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the package jweiland/indexnow.
  *
@@ -138,5 +140,16 @@ class StackTest extends FunctionalTestCase
             'example.com',
             $subject->getHost(),
         );
+    }
+
+    #[Test]
+    public function fromRawTrimsUrl(): void
+    {
+        $subject = Stack::fromRaw(123, "  https://example.com/\n", 456);
+
+        self::assertSame(123, $subject->getUid());
+        self::assertSame('https://example.com/', $subject->getUrl());
+        self::assertSame(456, $subject->getTargetPid());
+        self::assertTrue($subject->hasValidUrl());
     }
 }

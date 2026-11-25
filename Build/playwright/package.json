@@ -1,0 +1,14 @@
+{
+  "name": "indexnow-e2e",
+  "private": true,
+  "description": "Playwright end-to-end tests for EXT:indexnow against a running TYPO3 instance",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

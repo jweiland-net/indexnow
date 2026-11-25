@@ -10,7 +10,6 @@
          backupGlobals="true"
          beStrictAboutTestsThatDoNotTestAnything="false"
          bootstrap="UnitTestsBootstrap.php"
-         cacheResult="false"
          colors="true"
          failOnRisky="true"
          failOnWarning="true"

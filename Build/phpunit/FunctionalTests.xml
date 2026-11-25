@@ -5,7 +5,6 @@
          backupGlobals="true"
          beStrictAboutTestsThatDoNotTestAnything="false"
          bootstrap="FunctionalTestsBootstrap.php"
-         cacheResult="false"
          colors="true"
          failOnRisky="true"
          failOnWarning="true"

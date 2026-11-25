@@ -1,0 +1,48 @@
+name: ter-release.yml
+on:
+  release:
+    types: [published]
+jobs:
+  publish:
+    name: Publish Extension to TYPO3 Extension Repository (TER)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TYPO3_EXTENSION_KEY: ${{ secrets.TYPO3_EXTENSION_KEY }}
+      TYPO3_REPOSITORY_URL: ${{ secrets.TYPO3_REPOSITORY_URL }}
+      TYPO3_API_TOKEN: ${{ secrets.TYPO3_API_TOKEN }}
+      TYPO3_API_USERNAME: ${{ secrets.TYPO3_API_USERNAME }}
+      TYPO3_API_PASSWORD: ${{ secrets.TYPO3_API_PASSWORD }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Get version
+        id: prep
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          # Remove the "v" prefix if present, e.g. v1.0.0 -> 1.0.0
+          echo "VERSION=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: intl, mbstring, json, libxml, xml, soap, zip, curl
+          tools: composer:v2
+
+      - name: Install TYPO3 Tailor Extension
+        run: composer global require typo3/tailor --prefer-dist --no-progress --no-suggest
+
+      - name: Release to TER
+        env:
+          # Release data is user-controlled: pass it as environment variables, never interpolate it into the script
+          VERSION: ${{ steps.prep.outputs.VERSION }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_NOTES: ${{ github.event.release.body }}
+        run: |
+          php ~/.composer/vendor/bin/tailor ter:publish "$VERSION" \
+            --artefact="$TYPO3_REPOSITORY_URL/archive/$RELEASE_TAG.zip" \
+            --comment="$RELEASE_NOTES"

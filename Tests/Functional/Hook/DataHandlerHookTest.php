@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the package jweiland/indexnow.
  *
@@ -13,16 +15,22 @@ use JWeiland\IndexNow\Domain\Repository\StackRepository;
 use JWeiland\IndexNow\Event\ModifyPageUidEvent;
 use JWeiland\IndexNow\Event\ProvidePreviewUrlEvent;
 use JWeiland\IndexNow\Hook\DataHandlerHook;
+use JWeiland\IndexNow\Service\BackendContextValidator;
+use JWeiland\IndexNow\Service\ContentChangeDetector;
+use JWeiland\IndexNow\Service\LanguageResolver;
+use JWeiland\IndexNow\Service\PagePreviewUrlBuilder;
+use JWeiland\IndexNow\Service\PageUidResolver;
+use JWeiland\IndexNow\Service\PreviewUrlCollector;
+use JWeiland\IndexNow\Service\RecordResolver;
 use JWeiland\IndexNow\Tests\Functional\SiteHandling\SiteBasedTestTrait;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Core\SystemEnvironmentBuilder;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
-use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Http\ServerRequest;
-use TYPO3\CMS\Core\Messaging\FlashMessageService;
-use TYPO3\CMS\Core\Page\PageRenderer;
+use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
@@ -86,12 +94,7 @@ class DataHandlerHookTest extends FunctionalTestCase
 
         $this->stackRepositoryMock = $this->createMock(StackRepository::class);
 
-        $this->subject = new DataHandlerHook(
-            $this->stackRepositoryMock,
-            $this->get(PageRenderer::class),
-            $this->get(FlashMessageService::class),
-            $this->get(EventDispatcher::class),
-        );
+        $this->subject = $this->createSubject($this->get(EventDispatcherInterface::class));
     }
 
     protected function tearDown(): void
@@ -103,57 +106,86 @@ class DataHandlerHookTest extends FunctionalTestCase
         parent::tearDown();
     }
 
-    #[Test]
-    public function hookWillNotBeProcessedOnEmptyDataMap(): void
+    private function createSubject(EventDispatcherInterface $eventDispatcher): DataHandlerHook
     {
-        $this->stackRepositoryMock
-            ->expects(self::never())
-            ->method('insert');
-
-        /** @var DataHandler $dataHandler */
-        $dataHandler = $this->get(DataHandler::class);
-        $dataHandler->datamap = [];
-
-        $this->subject->processDatamap_beforeStart($dataHandler);
+        return new DataHandlerHook(
+            $this->stackRepositoryMock,
+            new BackendContextValidator(),
+            new ContentChangeDetector($this->get(TcaSchemaFactory::class)),
+            new RecordResolver($this->get(TcaSchemaFactory::class)),
+            new PageUidResolver($eventDispatcher),
+            new LanguageResolver(),
+            new PreviewUrlCollector($eventDispatcher, new PagePreviewUrlBuilder()),
+        );
     }
 
     #[Test]
-    public function hookWillNotBeProcessedOnEmptyTableData(): void
+    public function hookWillNotBeProcessedWithoutChangedFields(): void
     {
         $this->stackRepositoryMock
             ->expects(self::never())
             ->method('insert');
 
-        /** @var DataHandler $dataHandler */
-        $dataHandler = $this->get(DataHandler::class);
-        $dataHandler->datamap = [
-            'pages' => [
-                'NEW1234' => [],
-            ],
-        ];
-
-        $this->subject->processDatamap_beforeStart($dataHandler);
+        $this->subject->processDatamap_afterDatabaseOperations(
+            'update',
+            'pages',
+            2,
+            [],
+            $this->get(DataHandler::class),
+        );
     }
 
     #[Test]
-    public function hookWillNotBeProcessedOnPageRecordWithoutUid(): void
+    public function hookWillNotBeProcessedOnBookkeepingChangesOnly(): void
     {
         $this->stackRepositoryMock
             ->expects(self::never())
             ->method('insert');
 
-        /** @var DataHandler $dataHandler */
-        $dataHandler = $this->get(DataHandler::class);
-        $dataHandler->datamap = [
-            'pages' => [
-                'NEW1234' => [
-                    'pid' => 1,
-                    'title' => 'Plugin: maps2',
-                ],
-            ],
-        ];
+        $this->subject->processDatamap_afterDatabaseOperations(
+            'update',
+            'pages',
+            2,
+            ['l10n_state' => '{}', 'tstamp' => 1764000000],
+            $this->get(DataHandler::class),
+        );
+    }
 
-        $this->subject->processDatamap_beforeStart($dataHandler);
+    #[Test]
+    public function hookWillNotBeProcessedIfNewRecordWasNotInserted(): void
+    {
+        // Without a mapping in DataHandler::$substNEWwithIDs the record has not been inserted
+        $this->stackRepositoryMock
+            ->expects(self::never())
+            ->method('insert');
+
+        $this->subject->processDatamap_afterDatabaseOperations(
+            'new',
+            'pages',
+            'NEW1234',
+            ['pid' => 1, 'title' => 'Plugin: maps2'],
+            $this->get(DataHandler::class),
+        );
+    }
+
+    #[Test]
+    public function hookWillInsertNewStackRecordForNewPageWithMappedUid(): void
+    {
+        $this->stackRepositoryMock
+            ->expects(self::once())
+            ->method('insert')
+            ->with(self::identicalTo('https://example.com/'), self::identicalTo(2));
+
+        $dataHandler = $this->get(DataHandler::class);
+        $dataHandler->substNEWwithIDs['NEW1234'] = 2;
+
+        $this->subject->processDatamap_afterDatabaseOperations(
+            'new',
+            'pages',
+            'NEW1234',
+            ['pid' => 1, 'title' => 'Plugin: maps2'],
+            $dataHandler,
+        );
     }
 
     #[Test]
@@ -165,19 +197,13 @@ class DataHandlerHookTest extends FunctionalTestCase
 
         unset($GLOBALS['BE_USER']);
 
-        /** @var DataHandler $dataHandler */
-        $dataHandler = $this->get(DataHandler::class);
-        $dataHandler->datamap = [
-            'pages' => [
-                'NEW1234' => [
-                    'uid' => 2,
-                    'pid' => 1,
-                    'title' => 'Plugin: events2',
-                ],
-            ],
-        ];
-
-        $this->subject->processDatamap_beforeStart($dataHandler);
+        $this->subject->processDatamap_afterDatabaseOperations(
+            'update',
+            'pages',
+            2,
+            ['title' => 'Plugin: events2'],
+            $this->get(DataHandler::class),
+        );
     }
 
     #[Test]
@@ -189,19 +215,13 @@ class DataHandlerHookTest extends FunctionalTestCase
 
         $GLOBALS['BE_USER']->workspace = 1;
 
-        /** @var DataHandler $dataHandler */
-        $dataHandler = $this->get(DataHandler::class);
-        $dataHandler->datamap = [
-            'pages' => [
-                'NEW1234' => [
-                    'uid' => 2,
-                    'pid' => 1,
-                    'title' => 'Plugin: events2',
-                ],
-            ],
-        ];
-
-        $this->subject->processDatamap_beforeStart($dataHandler);
+        $this->subject->processDatamap_afterDatabaseOperations(
+            'update',
+            'pages',
+            2,
+            ['title' => 'Plugin: events2'],
+            $this->get(DataHandler::class),
+        );
     }
 
     #[Test]
@@ -213,19 +233,13 @@ class DataHandlerHookTest extends FunctionalTestCase
 
         $GLOBALS['BE_USER']->user = [];
 
-        /** @var DataHandler $dataHandler */
-        $dataHandler = $this->get(DataHandler::class);
-        $dataHandler->datamap = [
-            'pages' => [
-                'NEW1234' => [
-                    'uid' => 2,
-                    'pid' => 1,
-                    'title' => 'Plugin: events2',
-                ],
-            ],
-        ];
-
-        $this->subject->processDatamap_beforeStart($dataHandler);
+        $this->subject->processDatamap_afterDatabaseOperations(
+            'update',
+            'pages',
+            2,
+            ['title' => 'Plugin: events2'],
+            $this->get(DataHandler::class),
+        );
     }
 
     #[Test]
@@ -238,19 +252,13 @@ class DataHandlerHookTest extends FunctionalTestCase
             ->method('insert')
             ->with(self::identicalTo('https://example.com/'), self::identicalTo(2));
 
-        /** @var DataHandler $dataHandler */
-        $dataHandler = $this->get(DataHandler::class);
-        $dataHandler->datamap = [
-            'pages' => [
-                'NEW1234' => [
-                    'uid' => 2,
-                    'pid' => 1,
-                    'title' => 'Plugin: events2',
-                ],
-            ],
-        ];
-
-        $this->subject->processDatamap_beforeStart($dataHandler);
+        $this->subject->processDatamap_afterDatabaseOperations(
+            'update',
+            'pages',
+            2,
+            ['title' => 'Plugin: events2'],
+            $this->get(DataHandler::class),
+        );
     }
 
     #[Test]
@@ -274,7 +282,7 @@ class DataHandlerHookTest extends FunctionalTestCase
 
         $providePreviewUrlEvent->addPreviewUrl('https://example.com/news/123');
 
-        $eventDispatcherMock = $this->createMock(EventDispatcher::class);
+        $eventDispatcherMock = $this->createMock(EventDispatcherInterface::class);
         $eventDispatcherMock
             ->expects(self::atLeastOnce())
             ->method('dispatch')
@@ -290,12 +298,7 @@ class DataHandlerHookTest extends FunctionalTestCase
                 return $event;
             });
 
-        $subject = new DataHandlerHook(
-            $this->stackRepositoryMock,
-            $this->get(PageRenderer::class),
-            $this->get(FlashMessageService::class),
-            $eventDispatcherMock,
-        );
+        $subject = $this->createSubject($eventDispatcherMock);
 
         // PreviewUriBuilder::create is called statically in DataHandlerHook
         // so we have to initialize the full TYPO3 backend and site
@@ -304,19 +307,13 @@ class DataHandlerHookTest extends FunctionalTestCase
             ->method('insert')
             ->with(self::identicalTo('https://example.com/news/123'), self::identicalTo(16));
 
-        /** @var DataHandler $dataHandler */
-        $dataHandler = $this->get(DataHandler::class);
-        $dataHandler->datamap = [
-            'pages' => [
-                'NEW1234' => [
-                    'uid' => 2,
-                    'pid' => 1,
-                    'title' => 'Plugin: events2',
-                ],
-            ],
-        ];
-
-        $subject->processDatamap_beforeStart($dataHandler);
+        $subject->processDatamap_afterDatabaseOperations(
+            'update',
+            'pages',
+            2,
+            ['title' => 'Plugin: events2'],
+            $this->get(DataHandler::class),
+        );
     }
 
     #[Test]
@@ -342,7 +339,7 @@ class DataHandlerHookTest extends FunctionalTestCase
         $providePreviewUrlEvent->addPreviewUrl('https://example.com/faq/123');
         $providePreviewUrlEvent->addPreviewUrl('https://other-site.com/faq/123', 42);
 
-        $eventDispatcherMock = $this->createMock(EventDispatcher::class);
+        $eventDispatcherMock = $this->createMock(EventDispatcherInterface::class);
         $eventDispatcherMock
             ->expects(self::atLeastOnce())
             ->method('dispatch')
@@ -358,12 +355,7 @@ class DataHandlerHookTest extends FunctionalTestCase
                 return $event;
             });
 
-        $subject = new DataHandlerHook(
-            $this->stackRepositoryMock,
-            $this->get(PageRenderer::class),
-            $this->get(FlashMessageService::class),
-            $eventDispatcherMock,
-        );
+        $subject = $this->createSubject($eventDispatcherMock);
 
         $insertedUrls = [];
         $this->stackRepositoryMock
@@ -373,19 +365,13 @@ class DataHandlerHookTest extends FunctionalTestCase
                 $insertedUrls[] = [$url, $pageUid];
             });
 
-        /** @var DataHandler $dataHandler */
-        $dataHandler = $this->get(DataHandler::class);
-        $dataHandler->datamap = [
-            'pages' => [
-                'NEW1234' => [
-                    'uid' => 2,
-                    'pid' => 1,
-                    'title' => 'Plugin: events2',
-                ],
-            ],
-        ];
-
-        $subject->processDatamap_beforeStart($dataHandler);
+        $subject->processDatamap_afterDatabaseOperations(
+            'update',
+            'pages',
+            2,
+            ['title' => 'Plugin: events2'],
+            $this->get(DataHandler::class),
+        );
 
         self::assertSame(
             [

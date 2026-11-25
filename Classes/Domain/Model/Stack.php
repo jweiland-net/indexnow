@@ -13,13 +13,24 @@ namespace JWeiland\IndexNow\Domain\Model;
 
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-class Stack
+/**
+ * A queued URL (record of table "tx_indexnow_stack") waiting to be sent to the IndexNow endpoint
+ */
+final readonly class Stack
 {
     public function __construct(
-        private readonly int $uid,
-        private readonly string $url,
-        private readonly int $targetPid = 0,
+        private int $uid,
+        private string $url,
+        private int $targetPid = 0,
     ) {}
+
+    /**
+     * Creates a stack from raw (f.e. database) values, which may contain surrounding whitespace
+     */
+    public static function fromRaw(int $uid, string $url, int $targetPid = 0): self
+    {
+        return new self($uid, trim($url), $targetPid);
+    }
 
     public function getUid(): int
     {
@@ -28,7 +39,7 @@ class Stack
 
     public function getUrl(): string
     {
-        return trim($this->url);
+        return $this->url;
     }
 
     public function getTargetPid(): int
@@ -38,16 +49,12 @@ class Stack
 
     public function hasValidUrl(): bool
     {
-        if ($this->getUrl() === '') {
-            return false;
-        }
-
-        return GeneralUtility::isValidUrl($this->getUrl());
+        return $this->url !== '' && GeneralUtility::isValidUrl($this->url);
     }
 
     public function getHost(): string
     {
-        $host = parse_url($this->getUrl(), PHP_URL_HOST);
+        $host = parse_url($this->url, PHP_URL_HOST);
 
         return is_string($host) ? $host : '';
     }

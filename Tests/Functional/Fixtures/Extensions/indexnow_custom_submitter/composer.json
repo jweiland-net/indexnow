@@ -1,0 +1,18 @@
+{
+	"name": "jweiland/indexnow-custom-submitter",
+	"description": "Test fixture: registers a custom IndexNow URL submitter with a higher priority",
+	"license": "GPL-2.0-or-later",
+	"type": "typo3-cms-extension",
+	"require": {
+		"jweiland/indexnow": "*"
+	},
+	"extra": {
+		"typo3/cms": {
+			"Package": {
+				"providesPackages": {}
+			},
+			"extension-key": "indexnow_custom_submitter",
+			"version": "1.0.0"
+		}
+	}
+}

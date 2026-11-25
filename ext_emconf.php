@@ -14,10 +14,12 @@ $EM_CONF[$_EXTKEY] = [
     'author' => 'Stefan Froemken, Hoja Mustaffa Abdul Latheef',
     'author_email' => 'projects@jweiland.net',
     'state' => 'stable',
-    'version' => '0.0.11',
+    'version' => '1.0.0',
     'constraints' => [
         'depends' => [
-            'typo3' => '12.4.31-13.4.99',
+            'php' => '8.2.0-8.5.99',
+            'typo3' => '13.4.12-14.3.99',
+            'backend' => '13.4.12-14.3.99',
         ],
         'conflicts' => [],
         'suggests' => [],

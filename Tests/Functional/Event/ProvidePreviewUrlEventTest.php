@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the package jweiland/indexnow.
  *
@@ -192,86 +194,6 @@ class ProvidePreviewUrlEventTest extends FunctionalTestCase
         self::assertSame(
             [],
             $subject->getPreviewUrls(),
-        );
-    }
-
-    #[Test]
-    public function getPreviewUrlWillInitiallyReturnEmptyString(): void
-    {
-        $subject = new ProvidePreviewUrlEvent(
-            table: 'tx_news_domain_model_news',
-            recordUid: 123,
-            record: [
-                'uid' => 123,
-            ],
-        );
-
-        self::assertSame(
-            '',
-            $subject->getPreviewUrl(),
-        );
-    }
-
-    #[Test]
-    public function setPreviewUrlWillSetPreviewUrl(): void
-    {
-        $subject = new ProvidePreviewUrlEvent(
-            table: 'tx_news_domain_model_news',
-            recordUid: 123,
-            record: [
-                'uid' => 123,
-            ],
-        );
-
-        $subject->setPreviewUrl('https://example.com/preview/123');
-
-        self::assertSame(
-            'https://example.com/preview/123',
-            $subject->getPreviewUrl(),
-        );
-    }
-
-    #[Test]
-    public function setPreviewUrlWithInvalidUrlWillNotSetPreviewUrl(): void
-    {
-        $subject = new ProvidePreviewUrlEvent(
-            table: 'tx_news_domain_model_news',
-            recordUid: 123,
-            record: [
-                'uid' => 123,
-            ],
-        );
-
-        $subject->setPreviewUrl('invalid-url');
-
-        self::assertSame(
-            '',
-            $subject->getPreviewUrl(),
-        );
-    }
-
-    #[Test]
-    public function setPreviewUrlIsReflectedInGetPreviewUrls(): void
-    {
-        $subject = new ProvidePreviewUrlEvent(
-            table: 'tx_news_domain_model_news',
-            recordUid: 123,
-            record: [
-                'uid' => 123,
-            ],
-        );
-
-        $subject->setPreviewUrl('https://example.com/preview/123');
-
-        $previewUrls = $subject->getPreviewUrls();
-
-        self::assertCount(
-            1,
-            $previewUrls,
-        );
-        self::assertSame(
-            'https://example.com/preview/123',
-            $previewUrls[0]->getUrl(),
         );
     }
 }

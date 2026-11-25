@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace JWeiland\IndexNow\Middleware;
 
+use JWeiland\IndexNow\Configuration\ApiKeyResolver;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -24,13 +25,17 @@ use TYPO3\CMS\Core\Site\Entity\Site;
  * IndexNow requires a verification file at the root of the website
  * whose filename and content match the configured API key. This
  * middleware dynamically serves that endpoint, using the API key
- * stored in the extension configuration,
- * removing the need to manually create or update a static file.
+ * stored in the site settings, removing the need to manually create
+ * or update a static file.
  *
  * @see https://www.indexnow.org/documentation
  */
 final readonly class ApiKeyVerificationMiddleware implements MiddlewareInterface
 {
+    public function __construct(
+        private ApiKeyResolver $apiKeyResolver,
+    ) {}
+
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $site = $request->getAttribute('site');
@@ -38,24 +43,8 @@ final readonly class ApiKeyVerificationMiddleware implements MiddlewareInterface
             return $handler->handle($request);
         }
 
-        $apiKey = (string)$site->getSettings()->get('indexnow.apiKey', '');
-        if ($apiKey === '') {
-            return $handler->handle($request);
-        }
-
-        $serverParams = $request->getServerParams();
-        $requestPath = parse_url($serverParams['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
-        if (!is_string($requestPath)) {
-            return $handler->handle($request);
-        }
-
-        $path = ltrim($requestPath, '/');
-        $sitePath = ltrim($site->getBase()->getPath(), '/');
-        if ($sitePath !== '' && str_starts_with($path, $sitePath)) {
-            $path = ltrim(substr($path, strlen($sitePath)), '/');
-        }
-
-        if ($path !== $apiKey . '.txt') {
+        $apiKey = $this->apiKeyResolver->getApiKeyForSite($site);
+        if ($apiKey === '' || $this->getPathRelativeToSite($request, $site) !== $apiKey . '.txt') {
             return $handler->handle($request);
         }
 
@@ -68,5 +57,17 @@ final readonly class ApiKeyVerificationMiddleware implements MiddlewareInterface
                 'Cache-Control' => 'public, max-age=86400',
             ],
         );
+    }
+
+    private function getPathRelativeToSite(ServerRequestInterface $request, Site $site): string
+    {
+        $path = ltrim($request->getUri()->getPath(), '/');
+        $sitePath = ltrim($site->getBase()->getPath(), '/');
+
+        if ($sitePath !== '' && str_starts_with($path, $sitePath)) {
+            return ltrim(substr($path, strlen($sitePath)), '/');
+        }
+
+        return $path;
     }
 }

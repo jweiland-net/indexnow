@@ -9,7 +9,7 @@
 
 return [
     'ctrl' => [
-        'title' => 'IndexNow URL Stack',
+        'title' => 'LLL:EXT:indexnow/Resources/Private/Language/locallang_db.xlf:tx_indexnow_stack',
         'label' => 'url',
         'tstamp' => 'tstamp',
         'crdate' => 'crdate',
@@ -33,13 +33,13 @@ return [
             ],
         ],
         'url' => [
-            'label' => 'URL',
+            'label' => 'LLL:EXT:indexnow/Resources/Private/Language/locallang_db.xlf:tx_indexnow_stack.url',
             'config' => [
                 'type' => 'passthrough',
             ],
         ],
         'target_pid' => [
-            'label' => 'Target PID',
+            'label' => 'LLL:EXT:indexnow/Resources/Private/Language/locallang_db.xlf:tx_indexnow_stack.target_pid',
             'config' => [
                 'type' => 'passthrough',
             ],

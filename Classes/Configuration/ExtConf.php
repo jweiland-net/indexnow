@@ -17,53 +17,56 @@ use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationPathDoesNotExis
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 
 /**
- * This class streamlines all settings from the extension manager
+ * Immutable representation of the extension settings (Settings → Extension Configuration)
  */
 #[Autoconfigure(constructor: 'create')]
-class ExtConf
+final readonly class ExtConf
 {
     private const EXT_KEY = 'indexnow';
 
     private const DEFAULT_SETTINGS = [
-        'searchEngineEndpoint' => '',
+        'searchEngineEndpoint' => 'https://www.bing.com/indexnow',
         'notifyBatchMode' => false,
     ];
 
     public function __construct(
-        private readonly string $searchEngineEndpoint = self::DEFAULT_SETTINGS['searchEngineEndpoint'],
-        private readonly bool $notifyBatchMode = self::DEFAULT_SETTINGS['notifyBatchMode'],
+        private string $searchEngineEndpoint = self::DEFAULT_SETTINGS['searchEngineEndpoint'],
+        private bool $notifyBatchMode = self::DEFAULT_SETTINGS['notifyBatchMode'],
     ) {}
 
     public static function create(ExtensionConfiguration $extensionConfiguration): self
     {
-        $extensionSettings = self::DEFAULT_SETTINGS;
-
-        // Overwrite default extension settings with values from EXT_CONF
         try {
-            $extensionSettings = array_merge(
-                $extensionSettings,
-                $extensionConfiguration->get(self::EXT_KEY),
-            );
+            $settings = $extensionConfiguration->get(self::EXT_KEY);
         } catch (ExtensionConfigurationExtensionNotConfiguredException|ExtensionConfigurationPathDoesNotExistException) {
+            return new self();
         }
 
+        if (!is_array($settings)) {
+            return new self();
+        }
+
+        $searchEngineEndpoint = $settings['searchEngineEndpoint'] ?? null;
+        $notifyBatchMode = $settings['notifyBatchMode'] ?? null;
+
         return new self(
-            searchEngineEndpoint: (string)$extensionSettings['searchEngineEndpoint'],
-            notifyBatchMode: (bool)$extensionSettings['notifyBatchMode'],
+            // An emptied field in the extension settings falls back to the default endpoint
+            searchEngineEndpoint: is_string($searchEngineEndpoint) && trim($searchEngineEndpoint) !== ''
+                ? trim($searchEngineEndpoint)
+                : self::DEFAULT_SETTINGS['searchEngineEndpoint'],
+            notifyBatchMode: is_scalar($notifyBatchMode)
+                ? (bool)$notifyBatchMode
+                : self::DEFAULT_SETTINGS['notifyBatchMode'],
         );
     }
 
     public function getSearchEngineEndpoint(): string
     {
-        if ($this->searchEngineEndpoint === '') {
-            return 'https://www.bing.com/indexnow';
-        }
-
         return $this->searchEngineEndpoint;
     }
 
     public function isNotifyBatchMode(): bool
     {
-        return (bool)$this->notifyBatchMode;
+        return $this->notifyBatchMode;
     }
 }

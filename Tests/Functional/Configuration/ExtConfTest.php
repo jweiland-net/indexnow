@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the package jweiland/indexnow.
  *
@@ -9,10 +11,8 @@
 
 namespace JWeiland\IndexNow\Tests\Functional\Configuration;
 
-use JWeiland\Indexnow\Configuration\ExtConf;
+use JWeiland\IndexNow\Configuration\ExtConf;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\MockObject\MockObject;
-use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
@@ -20,27 +20,9 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
  */
 class ExtConfTest extends FunctionalTestCase
 {
-    public ExtensionConfiguration|MockObject $extensionConfigurationMock;
-
     protected array $testExtensionsToLoad = [
         'jweiland/indexnow',
     ];
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->extensionConfigurationMock = $this->createMock(ExtensionConfiguration::class);
-    }
-
-    protected function tearDown(): void
-    {
-        unset(
-            $this->extensionConfigurationMock,
-        );
-
-        parent::tearDown();
-    }
 
     #[Test]
     public function getSearchEngineEndpointInitiallyReturnsBingSearchEngine(): void
@@ -83,7 +65,7 @@ class ExtConfTest extends FunctionalTestCase
     public function setNotifyBatchModeSetsNotifyBatchMode(): void
     {
         $config = [
-            'notifyBatchMode' => '1',
+            'notifyBatchMode' => true,
         ];
         $subject = new ExtConf(...$config);
 

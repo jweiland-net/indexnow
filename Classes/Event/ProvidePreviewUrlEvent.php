@@ -26,17 +26,17 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  * By listening to this event, extension authors can contribute their own preview URL generation for
  * their records and add the resulting URLs via {@see addPreviewUrl()}, once per rendering page.
  */
-class ProvidePreviewUrlEvent
+final class ProvidePreviewUrlEvent
 {
     /**
-     * @var PreviewUrl[]
+     * @var list<PreviewUrl>
      */
     private array $previewUrls = [];
 
     /**
-     * @param string $table This is the table name of the record to store
-     * @param string|int $recordUid This is the record UID. Can be string if "NEW", else INT
-     * @param array $record This is the record requested to be stored. Coming from DataHandler.
+     * @param string $table The table name of the record to store
+     * @param string|int $recordUid The record UID. Can be string if "NEW", else INT
+     * @param array<string, mixed> $record The record requested to be stored. Coming from DataHandler.
      */
     public function __construct(
         private readonly string $table,
@@ -54,6 +54,9 @@ class ProvidePreviewUrlEvent
         return $this->recordUid;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getRecord(): array
     {
         return $this->record;
@@ -73,38 +76,10 @@ class ProvidePreviewUrlEvent
     }
 
     /**
-     * @return PreviewUrl[]
+     * @return list<PreviewUrl>
      */
     public function getPreviewUrls(): array
     {
         return $this->previewUrls;
-    }
-
-    /**
-     * @deprecated since indexnow 0.0.11, will be removed in indexnow 1.0.0
-     */
-    public function setPreviewUrl(string $previewUrl): void
-    {
-        trigger_error(
-            'ProvidePreviewUrlEvent::setPreviewUrl() is deprecated and will be removed in indexnow 1.0.0. '
-            . 'Use addPreviewUrl() instead, it supports more than one URL per record.',
-            E_USER_DEPRECATED,
-        );
-
-        $this->addPreviewUrl($previewUrl);
-    }
-
-    /**
-     * @deprecated since indexnow 0.0.11, will be removed in indexnow 1.0.0
-     */
-    public function getPreviewUrl(): string
-    {
-        trigger_error(
-            'ProvidePreviewUrlEvent::getPreviewUrl() is deprecated and will be removed in indexnow 1.0.0. '
-            . 'Use getPreviewUrls() instead, it returns more than one URL per record.',
-            E_USER_DEPRECATED,
-        );
-
-        return ($this->previewUrls[0] ?? null)?->getUrl() ?? '';
     }
 }

@@ -4,8 +4,8 @@
 [![Latest Stable Version][extension-build-shield]][extension-ter-url]
 [![Total Downloads][extension-downloads-badge]][extension-packagist-url]
 [![Monthly Downloads][extension-monthly-downloads]][extension-packagist-url]
-[![TYPO3 12.4][TYPO3-12-shield]][TYPO3-12-url]
 [![TYPO3 13.4][TYPO3-13-shield]][TYPO3-13-url]
+[![TYPO3 14.3][TYPO3-14-shield]][TYPO3-14-url]
 
 > The extension is in a heavy development phase. Breaking changes can be expected between releases.
 
@@ -116,8 +116,21 @@ vendor/bin/typo3 indexnow:notify
 
 Just change a value on a page or content element and store the record.
 Internally the page UID will be extracted and will be used to build a preview
-URL. That URL will be bind with the IndexNow API endpoint URL and stored in
-table `tx_indexnow_stack`.
+URL. That URL will be stored in table `tx_indexnow_stack`.
+
+Only records whose content has actually been changed are processed. Saving a
+record without any change does not inform IndexNow. As DataHandler does not
+report, whether MM relations (f.e. `categories`) have really been changed,
+changing only the MM relations of a record does not inform IndexNow, either.
+
+Hidden pages and records on hidden pages are skipped, as their URLs are not
+reachable in frontend. Making a hidden page visible queues its URL. As TYPO3
+creates new pages hidden by default, a new page is queued as soon as it is
+made visible.
+
+If you change a field of a record in the default language, which TYPO3
+synchronizes into its translations (`'l10n_mode' => 'exclude'` or
+`allowLanguageSynchronization`), the URLs of the translations are queued, too.
 
 Now you have to wait until next scheduler task run where all inserted stack
 entries will be processed.
@@ -167,11 +180,18 @@ To prevent pages to be sent to IndexNow you can use event `ModifyPageUidEvent`.
 
 Register your own EventListener:
 
-```yaml
-MyVendor\MyExtension\EventListener\DoSomethingEventListener:
-  tags:
-    - name: event.listener
-      event: JWeiland\IndexNow\Event\ModifyPageUidEvent
+```php
+use JWeiland\IndexNow\Event\ModifyPageUidEvent;
+use TYPO3\CMS\Core\Attribute\AsEventListener;
+
+#[AsEventListener(identifier: 'my-extension/prevent-indexnow')]
+final readonly class DoSomethingEventListener
+{
+    public function __invoke(ModifyPageUidEvent $modifyPageUidEvent): void
+    {
+        // ...
+    }
+}
 ```
 
 Set page UID to `0` in event class:
@@ -181,6 +201,27 @@ $modifyPageUidEvent->setPageUid(0);
 ```
 
 This will prevent IndexNow to be informed.
+
+### Add or replace a URL submitter
+
+URLs are sent by URL submitters (`UrlSubmitterInterface`), which are collected
+via the DI tag `indexnow.url_submitter` and ordered by the tag priority. For
+each host, the first submitter whose `supports()` returns `true` sends the URLs.
+The built-in `SingleUrlSubmitter` and `BatchUrlSubmitter` use priority `0`.
+
+Register your own implementation with a higher priority to replace them:
+
+```yaml
+MyVendor\MyExtension\Notifier\MyUrlSubmitter:
+  tags:
+    - name: indexnow.url_submitter
+      priority: 100
+```
+
+The notifier classes (`SearchEngineNotifier`, `SingleUrlSubmitter`,
+`BatchUrlSubmitter`) are designed for extension: their methods and properties
+are `protected`, so you can also extend them via XCLASS or a Symfony service
+alias.
 
 ## Missing version tags
 
@@ -192,6 +233,24 @@ that issue.
 
 ## Update
 
+### Update to Version 1.0.0
+
+- TYPO3 12 is not supported anymore. Supported TYPO3 versions are 13.4 LTS and 14.3 LTS.
+- `ProvidePreviewUrlEvent::setPreviewUrl()` and `ProvidePreviewUrlEvent::getPreviewUrl()` have been
+  removed. Use `addPreviewUrl()` and `getPreviewUrls()` instead.
+- `SearchEngineNotifier::notify()` expects a `list<Stack>` instead of `\SplObjectStorage`.
+- Most classes of this extension are `final` now. Use the provided PSR-14 events instead. The notifier
+  classes (`SearchEngineNotifier`, `SingleUrlSubmitter`, `BatchUrlSubmitter`) stay extensible, and URL
+  submitters can be added or replaced via the DI tag `indexnow.url_submitter` (see "For developers").
+- Only records whose content has actually been changed are queued. Saving a record without changes
+  does not inform IndexNow anymore.
+- Translations are queued, if TYPO3 synchronized a changed field (`l10n_mode=exclude`) of the default
+  language into them.
+- New pages are queued, too.
+- Hidden pages and records on hidden pages are not queued anymore (`RespectHiddenPagesEventListener`).
+- `DataHandlerHook::processDatamap_beforeStart()` has been replaced by
+  `DataHandlerHook::processDatamap_afterDatabaseOperations()`.
+
 ### Update to Version 0.0.7
 
 - The debug mode has been removed, as it was primarily used for viewing the resulting URL. With xDebug, this functionality is now redundant.
@@ -202,10 +261,6 @@ that issue.
 
 Delete all records from `tx_indexnow_stack` for a specific page on
 delete (DataHandler).
-
-Creating a new page or content element should call the IndexNow services.
-Currently, only modified pages and content elements will be processed. We
-should use the afterAllDatabaseOperations DataHandler hook instead.
 
 Nice to have: Add a section into EXT:reports to check IndexNow
 configuration health.
@@ -230,10 +285,10 @@ For commercial support, please contact us at [support@jweiland.net](support@jwei
 
 [packagist-logo-stable]: https://img.shields.io/badge/--grey.svg?style=for-the-badge&logo=packagist&logoColor=white
 
-[TYPO3-12-url]: https://get.typo3.org/version/12
-
-[TYPO3-12-shield]: https://img.shields.io/badge/TYPO3-12.4-green.svg?style=for-the-badge&logo=typo3
-
 [TYPO3-13-url]: https://get.typo3.org/version/13
 
 [TYPO3-13-shield]: https://img.shields.io/badge/TYPO3-13.4-green.svg?style=for-the-badge&logo=typo3
+
+[TYPO3-14-url]: https://get.typo3.org/version/14
+
+[TYPO3-14-shield]: https://img.shields.io/badge/TYPO3-14.3-green.svg?style=for-the-badge&logo=typo3
