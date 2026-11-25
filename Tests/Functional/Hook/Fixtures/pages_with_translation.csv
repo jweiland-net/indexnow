@@ -1,0 +1,5 @@
+"pages",,,,,,,,
+,"uid","pid","title","slug","sys_language_uid","l10n_parent","layout","is_siteroot"
+,1,0,"Home","/",0,0,0,1
+,2,1,"Sub page","/sub",0,0,0,0
+,3,1,"Unterseite","/unterseite",1,2,0,0
