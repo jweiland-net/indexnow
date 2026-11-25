@@ -26,3 +26,15 @@ Version 1.0.0
 *   [BUGFIX] Do not HTML-encode preview URLs before storing them in the stack
 *   [BUGFIX] Prevent TypeError when a record to merge does not exist anymore
 *   [BUGFIX] Log missing API key in batch mode instead of silently skipping the host
+*   [BUGFIX] Inform IndexNow about translations, if TYPO3 synchronized a changed ``l10n_mode=exclude``
+    (or ``allowLanguageSynchronization``) field from the default language into them
+    (`#28 <https://github.com/jweiland-net/indexnow/issues/28>`__)
+*   [BUGFIX] Queue the new URL instead of the old one, if the slug of a page has been changed
+*   [BUGFIX] Queue new pages. The final UID is resolved from the temporary ``NEW...`` ID via
+    ``DataHandler::$substNEWwithIDs``
+*   [BUGFIX] Skip hidden pages and records on hidden pages (``RespectHiddenPagesEventListener``),
+    as their URLs are not reachable in frontend
+*   [!!!][TASK] Only queue records whose content has actually been changed. Saving a record without
+    changes does not inform IndexNow anymore. Changing only MM relations (f.e. ``categories``) does not
+    inform IndexNow, as DataHandler does not report if they have really been changed. The DataHandler
+    hook moved from ``processDatamap_beforeStart`` to ``processDatamap_afterDatabaseOperations``
