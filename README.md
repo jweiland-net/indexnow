@@ -4,7 +4,6 @@
 [![Latest Stable Version][extension-build-shield]][extension-ter-url]
 [![Total Downloads][extension-downloads-badge]][extension-packagist-url]
 [![Monthly Downloads][extension-monthly-downloads]][extension-packagist-url]
-[![TYPO3 12.4][TYPO3-12-shield]][TYPO3-12-url]
 [![TYPO3 13.4][TYPO3-13-shield]][TYPO3-13-url]
 [![TYPO3 14.3][TYPO3-14-shield]][TYPO3-14-url]
 
@@ -168,11 +167,18 @@ To prevent pages to be sent to IndexNow you can use event `ModifyPageUidEvent`.
 
 Register your own EventListener:
 
-```yaml
-MyVendor\MyExtension\EventListener\DoSomethingEventListener:
-  tags:
-    - name: event.listener
-      event: JWeiland\IndexNow\Event\ModifyPageUidEvent
+```php
+use JWeiland\IndexNow\Event\ModifyPageUidEvent;
+use TYPO3\CMS\Core\Attribute\AsEventListener;
+
+#[AsEventListener(identifier: 'my-extension/prevent-indexnow')]
+final readonly class DoSomethingEventListener
+{
+    public function __invoke(ModifyPageUidEvent $modifyPageUidEvent): void
+    {
+        // ...
+    }
+}
 ```
 
 Set page UID to `0` in event class:
@@ -192,6 +198,15 @@ versions from TYPO3 TER or use version `0.0.4` which solves
 that issue.
 
 ## Update
+
+### Update to Version 1.0.0
+
+- TYPO3 12 is not supported anymore. Supported TYPO3 versions are 13.4 LTS and 14.3 LTS.
+- `ProvidePreviewUrlEvent::setPreviewUrl()` and `ProvidePreviewUrlEvent::getPreviewUrl()` have been
+  removed. Use `addPreviewUrl()` and `getPreviewUrls()` instead.
+- `SearchEngineNotifier::notify()` expects a `list<Stack>` instead of `\SplObjectStorage`.
+- Classes of this extension are `final` or `readonly` now. Extending them is not supported anymore.
+  Use the provided PSR-14 events instead.
 
 ### Update to Version 0.0.7
 
@@ -230,10 +245,6 @@ For commercial support, please contact us at [support@jweiland.net](support@jwei
 [extension-packagist-url]: https://packagist.org/packages/jweiland/indexnow/
 
 [packagist-logo-stable]: https://img.shields.io/badge/--grey.svg?style=for-the-badge&logo=packagist&logoColor=white
-
-[TYPO3-12-url]: https://get.typo3.org/version/12
-
-[TYPO3-12-shield]: https://img.shields.io/badge/TYPO3-12.4-green.svg?style=for-the-badge&logo=typo3
 
 [TYPO3-13-url]: https://get.typo3.org/version/13
 
