@@ -39,6 +39,9 @@ jobs:
       - name: 'CGL'
         run: Build/Scripts/runTests.sh -n -p ${{ matrix.php }} -s cgl
 
+      - name: 'PHPStan'
+        run: Build/Scripts/runTests.sh -p ${{ matrix.php }} -s phpstan
+
       - name: 'Execute unit tests'
         run: Build/Scripts/runTests.sh -p ${{ matrix.php }} -s unit
 
