@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the package jweiland/indexnow.
  *
@@ -9,9 +11,12 @@
 
 namespace JWeiland\IndexNow\Tests\Functional\Notifier;
 
+use JWeiland\IndexNow\Configuration\ApiKeyResolver;
 use JWeiland\IndexNow\Configuration\ExtConf;
 use JWeiland\IndexNow\Domain\Model\Stack;
 use JWeiland\IndexNow\Notifier\SearchEngineNotifier;
+use JWeiland\IndexNow\Notifier\Submitter\BatchUrlSubmitter;
+use JWeiland\IndexNow\Notifier\Submitter\SingleUrlSubmitter;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use TYPO3\CMS\Core\Http\RequestFactory;
@@ -68,6 +73,19 @@ class SearchEngineNotifierTest extends FunctionalTestCase
         ]);
     }
 
+    private function createSubject(ExtConf $extConf): SearchEngineNotifier
+    {
+        $apiKeyResolver = new ApiKeyResolver($this->siteFinderMock);
+
+        return new SearchEngineNotifier(
+            [
+                new SingleUrlSubmitter($this->requestFactoryMock, $apiKeyResolver, $extConf, $this->loggerMock),
+                new BatchUrlSubmitter($this->requestFactoryMock, $apiKeyResolver, $extConf, $this->loggerMock),
+            ],
+            $this->loggerMock,
+        );
+    }
+
     #[Test]
     public function notifyWillLogInfoOnEmptyStorage(): void
     {
@@ -76,14 +94,9 @@ class SearchEngineNotifierTest extends FunctionalTestCase
             ->method('info')
             ->with(self::identicalTo('No URL records available, nothing sent.'));
 
-        $subject = new SearchEngineNotifier(
-            $this->requestFactoryMock,
-            $this->siteFinderMock,
-            new ExtConf(),
-            $this->loggerMock,
-        );
+        $subject = $this->createSubject(new ExtConf());
 
-        $subject->notify(new \SplObjectStorage());
+        $subject->notify([]);
     }
 
     #[Test]
@@ -116,22 +129,15 @@ class SearchEngineNotifierTest extends FunctionalTestCase
                 [20, $this->getSiteWithApiKey('typo3', 'OtherSafeApiKey')],
             ]);
 
-        $subject = new SearchEngineNotifier(
-            $this->requestFactoryMock,
-            $this->siteFinderMock,
-            new ExtConf(
-                notifyBatchMode: false,
-            ),
-            $this->loggerMock,
-        );
+        $subject = $this->createSubject(new ExtConf(notifyBatchMode: false));
 
-        $stackStorage = new \SplObjectStorage();
-        $stackStorage->attach(new Stack(1, 'https://example.com/events2', 10));
-        $stackStorage->attach(new Stack(2, 'https://example.com/maps2', 10));
-        $stackStorage->attach(new Stack(3, 'https://typo3.org/', 20));
+        $stacks = [];
+        $stacks[] = (new Stack(1, 'https://example.com/events2', 10));
+        $stacks[] = (new Stack(2, 'https://example.com/maps2', 10));
+        $stacks[] = (new Stack(3, 'https://typo3.org/', 20));
 
         self::assertTrue(
-            $subject->notify($stackStorage),
+            $subject->notify($stacks),
         );
     }
 
@@ -164,21 +170,14 @@ class SearchEngineNotifierTest extends FunctionalTestCase
                 [20, $this->getSiteWithApiKey('typo3', 'OtherSafeApiKey')],
             ]);
 
-        $subject = new SearchEngineNotifier(
-            $this->requestFactoryMock,
-            $this->siteFinderMock,
-            new ExtConf(
-                notifyBatchMode: true,
-            ),
-            $this->loggerMock,
-        );
+        $subject = $this->createSubject(new ExtConf(notifyBatchMode: true));
 
-        $stackStorage = new \SplObjectStorage();
-        $stackStorage->attach(new Stack(1, 'https://example.com/events2', 10));
-        $stackStorage->attach(new Stack(3, 'https://typo3.org/', 20));
+        $stacks = [];
+        $stacks[] = (new Stack(1, 'https://example.com/events2', 10));
+        $stacks[] = (new Stack(3, 'https://typo3.org/', 20));
 
         self::assertTrue(
-            $subject->notify($stackStorage),
+            $subject->notify($stacks),
         );
     }
 
@@ -223,22 +222,15 @@ class SearchEngineNotifierTest extends FunctionalTestCase
             ->with(10)
             ->willReturn($this->getSiteWithApiKey('example', 'SuperSafeApiKey'));
 
-        $subject = new SearchEngineNotifier(
-            $this->requestFactoryMock,
-            $this->siteFinderMock,
-            new ExtConf(
-                notifyBatchMode: true,
-            ),
-            $this->loggerMock,
-        );
+        $subject = $this->createSubject(new ExtConf(notifyBatchMode: true));
 
-        $stackStorage = new \SplObjectStorage();
-        $stackStorage->attach(new Stack(1, 'https://example.com/events2', 10));
-        $stackStorage->attach(new Stack(2, 'https://example.com/maps2', 10));
-        $stackStorage->attach(new Stack(3, 'https://example.com/indexnow', 10));
+        $stacks = [];
+        $stacks[] = (new Stack(1, 'https://example.com/events2', 10));
+        $stacks[] = (new Stack(2, 'https://example.com/maps2', 10));
+        $stacks[] = (new Stack(3, 'https://example.com/indexnow', 10));
 
         self::assertTrue(
-            $subject->notify($stackStorage),
+            $subject->notify($stacks),
         );
     }
 }
