@@ -6,6 +6,8 @@ jobs:
   publish:
     name: Publish Extension to TYPO3 Extension Repository (TER)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       TYPO3_EXTENSION_KEY: ${{ secrets.TYPO3_EXTENSION_KEY }}
       TYPO3_REPOSITORY_URL: ${{ secrets.TYPO3_REPOSITORY_URL }}
