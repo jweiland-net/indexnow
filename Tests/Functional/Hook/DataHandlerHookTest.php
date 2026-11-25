@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the package jweiland/indexnow.
  *
@@ -13,16 +15,20 @@ use JWeiland\IndexNow\Domain\Repository\StackRepository;
 use JWeiland\IndexNow\Event\ModifyPageUidEvent;
 use JWeiland\IndexNow\Event\ProvidePreviewUrlEvent;
 use JWeiland\IndexNow\Hook\DataHandlerHook;
+use JWeiland\IndexNow\Service\BackendContextValidator;
+use JWeiland\IndexNow\Service\LanguageResolver;
+use JWeiland\IndexNow\Service\PagePreviewUrlBuilder;
+use JWeiland\IndexNow\Service\PageUidResolver;
+use JWeiland\IndexNow\Service\PreviewUrlCollector;
+use JWeiland\IndexNow\Service\RecordResolver;
 use JWeiland\IndexNow\Tests\Functional\SiteHandling\SiteBasedTestTrait;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Core\SystemEnvironmentBuilder;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
-use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Http\ServerRequest;
-use TYPO3\CMS\Core\Messaging\FlashMessageService;
-use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
@@ -86,12 +92,7 @@ class DataHandlerHookTest extends FunctionalTestCase
 
         $this->stackRepositoryMock = $this->createMock(StackRepository::class);
 
-        $this->subject = new DataHandlerHook(
-            $this->stackRepositoryMock,
-            $this->get(PageRenderer::class),
-            $this->get(FlashMessageService::class),
-            $this->get(EventDispatcher::class),
-        );
+        $this->subject = $this->createSubject($this->get(EventDispatcherInterface::class));
     }
 
     protected function tearDown(): void
@@ -101,6 +102,18 @@ class DataHandlerHookTest extends FunctionalTestCase
         );
 
         parent::tearDown();
+    }
+
+    private function createSubject(EventDispatcherInterface $eventDispatcher): DataHandlerHook
+    {
+        return new DataHandlerHook(
+            $this->stackRepositoryMock,
+            new BackendContextValidator(),
+            new RecordResolver(),
+            new PageUidResolver($eventDispatcher),
+            new LanguageResolver(),
+            new PreviewUrlCollector($eventDispatcher, new PagePreviewUrlBuilder()),
+        );
     }
 
     #[Test]
@@ -274,7 +287,7 @@ class DataHandlerHookTest extends FunctionalTestCase
 
         $providePreviewUrlEvent->addPreviewUrl('https://example.com/news/123');
 
-        $eventDispatcherMock = $this->createMock(EventDispatcher::class);
+        $eventDispatcherMock = $this->createMock(EventDispatcherInterface::class);
         $eventDispatcherMock
             ->expects(self::atLeastOnce())
             ->method('dispatch')
@@ -290,12 +303,7 @@ class DataHandlerHookTest extends FunctionalTestCase
                 return $event;
             });
 
-        $subject = new DataHandlerHook(
-            $this->stackRepositoryMock,
-            $this->get(PageRenderer::class),
-            $this->get(FlashMessageService::class),
-            $eventDispatcherMock,
-        );
+        $subject = $this->createSubject($eventDispatcherMock);
 
         // PreviewUriBuilder::create is called statically in DataHandlerHook
         // so we have to initialize the full TYPO3 backend and site
@@ -342,7 +350,7 @@ class DataHandlerHookTest extends FunctionalTestCase
         $providePreviewUrlEvent->addPreviewUrl('https://example.com/faq/123');
         $providePreviewUrlEvent->addPreviewUrl('https://other-site.com/faq/123', 42);
 
-        $eventDispatcherMock = $this->createMock(EventDispatcher::class);
+        $eventDispatcherMock = $this->createMock(EventDispatcherInterface::class);
         $eventDispatcherMock
             ->expects(self::atLeastOnce())
             ->method('dispatch')
@@ -358,12 +366,7 @@ class DataHandlerHookTest extends FunctionalTestCase
                 return $event;
             });
 
-        $subject = new DataHandlerHook(
-            $this->stackRepositoryMock,
-            $this->get(PageRenderer::class),
-            $this->get(FlashMessageService::class),
-            $eventDispatcherMock,
-        );
+        $subject = $this->createSubject($eventDispatcherMock);
 
         $insertedUrls = [];
         $this->stackRepositoryMock
