@@ -24,14 +24,16 @@ use TYPO3\CMS\Core\Utility\HttpUtility;
 /**
  * Submits each URL with its own GET request.
  * Used if batch mode is disabled or a host has only one URL.
+ *
+ * Designed for extension (XCLASS or Symfony service alias): methods and properties are protected.
  */
-readonly class SingleUrlSubmitter implements UrlSubmitterInterface
+class SingleUrlSubmitter implements UrlSubmitterInterface
 {
     public function __construct(
-        private RequestFactory $requestFactory,
-        private ApiKeyResolver $apiKeyResolver,
-        private ExtConf $extConf,
-        private LoggerInterface $logger,
+        protected readonly RequestFactory $requestFactory,
+        protected readonly ApiKeyResolver $apiKeyResolver,
+        protected readonly ExtConf $extConf,
+        protected readonly LoggerInterface $logger,
     ) {}
 
     public function supports(int $numberOfStacks): bool
@@ -59,7 +61,7 @@ readonly class SingleUrlSubmitter implements UrlSubmitterInterface
     /**
      * @throws ApiKeyNotAvailableException
      */
-    private function submitStack(Stack $stack): bool
+    protected function submitStack(Stack $stack): bool
     {
         if (!$stack->hasValidUrl()) {
             return false;
@@ -98,7 +100,7 @@ readonly class SingleUrlSubmitter implements UrlSubmitterInterface
     /**
      * @throws ApiKeyNotAvailableException
      */
-    private function buildRequestUrl(Stack $stack): string
+    protected function buildRequestUrl(Stack $stack): string
     {
         $uri = (new Uri($this->extConf->getSearchEngineEndpoint()))->withQuery(
             HttpUtility::buildQueryString([

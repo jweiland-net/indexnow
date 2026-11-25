@@ -19,7 +19,7 @@ use TYPO3\CMS\Backend\Utility\BackendUtility;
  * Resolves the page UID a record is rendered on. Listeners of ModifyPageUidEvent
  * can change the page UID or set it to 0 to prevent informing IndexNow.
  */
-readonly class PageUidResolver
+final readonly class PageUidResolver
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,

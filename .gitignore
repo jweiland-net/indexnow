@@ -43,6 +43,8 @@ vendor/*
 composer.lock
 
 # Ignore testing stuff
+.phpunit.result.cache
+.phpunit.cache
 /.Build
 /composer.json.orig
 /composer.json.testing

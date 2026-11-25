@@ -16,7 +16,7 @@ use Psr\Http\Message\ServerRequestInterface;
 /**
  * Resolves the language UID of a record which is processed by DataHandler
  */
-readonly class LanguageResolver
+final readonly class LanguageResolver
 {
     /**
      * @param array<string, mixed> $record

@@ -20,7 +20,7 @@ use TYPO3\CMS\Core\Site\SiteFinder;
 /**
  * Single source of truth for reading the IndexNow API key from the site settings (setting "indexnow.apiKey")
  */
-readonly class ApiKeyResolver
+final readonly class ApiKeyResolver
 {
     private const SETTINGS_KEY = 'indexnow.apiKey';
 

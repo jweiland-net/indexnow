@@ -21,19 +21,21 @@ use TYPO3\CMS\Core\Http\RequestFactory;
 /**
  * Submits all URLs of one host with a single JSON POST request (chunked by the IndexNow limit).
  * Used if batch mode is enabled and a host has at least two URLs.
+ *
+ * Designed for extension (XCLASS or Symfony service alias): methods and properties are protected.
  */
-readonly class BatchUrlSubmitter implements UrlSubmitterInterface
+class BatchUrlSubmitter implements UrlSubmitterInterface
 {
     /**
      * In batch mode, there is a limit of 10,000 URLs per POST request.
      */
-    private const MAX_URLS_EACH_REQUEST = 10000;
+    protected const MAX_URLS_EACH_REQUEST = 10000;
 
     public function __construct(
-        private RequestFactory $requestFactory,
-        private ApiKeyResolver $apiKeyResolver,
-        private ExtConf $extConf,
-        private LoggerInterface $logger,
+        protected readonly RequestFactory $requestFactory,
+        protected readonly ApiKeyResolver $apiKeyResolver,
+        protected readonly ExtConf $extConf,
+        protected readonly LoggerInterface $logger,
     ) {}
 
     public function supports(int $numberOfStacks): bool
@@ -63,7 +65,7 @@ readonly class BatchUrlSubmitter implements UrlSubmitterInterface
     /**
      * @param list<Stack> $stacks
      */
-    private function submitChunk(string $host, string $apiKey, array $stacks): bool
+    protected function submitChunk(string $host, string $apiKey, array $stacks): bool
     {
         $postData = [
             'host' => $host,

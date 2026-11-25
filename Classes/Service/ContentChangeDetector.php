@@ -31,7 +31,7 @@ use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
  * relations are not available anymore, they can not be used to detect a change. Changing only the MM
  * relations of a record does therefore not inform IndexNow.
  */
-readonly class ContentChangeDetector
+final readonly class ContentChangeDetector
 {
     private const BOOKKEEPING_FIELDS = ['l10n_state'];
 

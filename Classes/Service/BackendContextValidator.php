@@ -19,7 +19,7 @@ use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
  * a stub BackendUserAuthentication. IndexNow is a passive side effect of an editor's change and must
  * never abort it, so processing is restricted to authenticated editors working in the live workspace.
  */
-readonly class BackendContextValidator
+final readonly class BackendContextValidator
 {
     public function isLiveEditorContext(): bool
     {

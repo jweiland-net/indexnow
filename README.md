@@ -202,6 +202,27 @@ $modifyPageUidEvent->setPageUid(0);
 
 This will prevent IndexNow to be informed.
 
+### Add or replace a URL submitter
+
+URLs are sent by URL submitters (`UrlSubmitterInterface`), which are collected
+via the DI tag `indexnow.url_submitter` and ordered by the tag priority. For
+each host, the first submitter whose `supports()` returns `true` sends the URLs.
+The built-in `SingleUrlSubmitter` and `BatchUrlSubmitter` use priority `0`.
+
+Register your own implementation with a higher priority to replace them:
+
+```yaml
+MyVendor\MyExtension\Notifier\MyUrlSubmitter:
+  tags:
+    - name: indexnow.url_submitter
+      priority: 100
+```
+
+The notifier classes (`SearchEngineNotifier`, `SingleUrlSubmitter`,
+`BatchUrlSubmitter`) are designed for extension: their methods and properties
+are `protected`, so you can also extend them via XCLASS or a Symfony service
+alias.
+
 ## Missing version tags
 
 I had to remove the tags `0.0.2` and `0.0.3` as these versions contain
@@ -218,8 +239,9 @@ that issue.
 - `ProvidePreviewUrlEvent::setPreviewUrl()` and `ProvidePreviewUrlEvent::getPreviewUrl()` have been
   removed. Use `addPreviewUrl()` and `getPreviewUrls()` instead.
 - `SearchEngineNotifier::notify()` expects a `list<Stack>` instead of `\SplObjectStorage`.
-- Classes of this extension are `final` or `readonly` now. Extending them is not supported anymore.
-  Use the provided PSR-14 events instead.
+- Most classes of this extension are `final` now. Use the provided PSR-14 events instead. The notifier
+  classes (`SearchEngineNotifier`, `SingleUrlSubmitter`, `BatchUrlSubmitter`) stay extensible, and URL
+  submitters can be added or replaced via the DI tag `indexnow.url_submitter` (see "For developers").
 - Only records whose content has actually been changed are queued. Saving a record without changes
   does not inform IndexNow anymore.
 - Translations are queued, if TYPO3 synchronized a changed field (`l10n_mode=exclude`) of the default

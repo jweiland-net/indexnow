@@ -141,4 +141,15 @@ class StackTest extends FunctionalTestCase
             $subject->getHost(),
         );
     }
+
+    #[Test]
+    public function fromRawTrimsUrl(): void
+    {
+        $subject = Stack::fromRaw(123, "  https://example.com/\n", 456);
+
+        self::assertSame(123, $subject->getUid());
+        self::assertSame('https://example.com/', $subject->getUrl());
+        self::assertSame(456, $subject->getTargetPid());
+        self::assertTrue($subject->hasValidUrl());
+    }
 }

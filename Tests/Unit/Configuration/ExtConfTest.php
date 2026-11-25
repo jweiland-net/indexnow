@@ -62,6 +62,20 @@ final class ExtConfTest extends UnitTestCase
     }
 
     #[Test]
+    public function createFallsBackToDefaultEndpointIfFieldHasBeenEmptied(): void
+    {
+        $extensionConfigurationStub = self::createStub(ExtensionConfiguration::class);
+        $extensionConfigurationStub
+            ->method('get')
+            ->willReturn(['searchEngineEndpoint' => '  ', 'notifyBatchMode' => '0']);
+
+        $subject = ExtConf::create($extensionConfigurationStub);
+
+        self::assertSame('https://www.bing.com/indexnow', $subject->getSearchEngineEndpoint());
+        self::assertFalse($subject->isNotifyBatchMode());
+    }
+
+    #[Test]
     public function createIgnoresSettingsOfInvalidType(): void
     {
         $extensionConfigurationStub = self::createStub(ExtensionConfiguration::class);

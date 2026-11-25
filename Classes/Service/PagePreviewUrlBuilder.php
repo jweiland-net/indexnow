@@ -17,7 +17,7 @@ use TYPO3\CMS\Core\Routing\UnableToLinkToPageException;
 /**
  * Builds the frontend URL of a page with TYPO3's PreviewUriBuilder
  */
-readonly class PagePreviewUrlBuilder
+final readonly class PagePreviewUrlBuilder
 {
     public function build(int $pageUid, int $languageUid = 0): ?string
     {

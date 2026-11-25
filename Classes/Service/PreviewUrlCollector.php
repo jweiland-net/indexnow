@@ -19,7 +19,7 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  * Collects the preview URLs of a record. Listeners of ProvidePreviewUrlEvent win; for example,
  * because the record is rendered on several pages or sites. Otherwise, the page preview URL is used.
  */
-readonly class PreviewUrlCollector
+final readonly class PreviewUrlCollector
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,

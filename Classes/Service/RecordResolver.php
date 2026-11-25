@@ -25,7 +25,7 @@ use TYPO3\CMS\Core\Utility\MathUtility;
  *
  * This class merges the persisted "uid", "pid" and language field with the record from the data map.
  */
-readonly class RecordResolver
+final readonly class RecordResolver
 {
     public function __construct(
         private TcaSchemaFactory $tcaSchemaFactory,

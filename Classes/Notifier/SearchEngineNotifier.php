@@ -17,16 +17,22 @@ use JWeiland\IndexNow\Notifier\Submitter\UrlSubmitterInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * Groups queued URLs by host and delegates each group to the matching submit strategy
+ * Groups queued URLs by host and delegates each group to the matching submit strategy.
+ *
+ * The URL submitters are tagged with "indexnow.url_submitter" and ordered by the tag priority.
+ * The first submitter supporting the number of URLs of a host wins. To replace a built-in
+ * submitter, register your own UrlSubmitterInterface implementation with a higher priority.
+ *
+ * Designed for extension (XCLASS or Symfony service alias): methods and properties are protected.
  */
-readonly class SearchEngineNotifier
+class SearchEngineNotifier
 {
     /**
      * @param iterable<UrlSubmitterInterface> $urlSubmitters
      */
     public function __construct(
-        private iterable $urlSubmitters,
-        private LoggerInterface $logger,
+        protected readonly iterable $urlSubmitters,
+        protected readonly LoggerInterface $logger,
     ) {}
 
     /**
@@ -52,7 +58,7 @@ readonly class SearchEngineNotifier
         return true;
     }
 
-    private function getUrlSubmitter(int $numberOfStacks): ?UrlSubmitterInterface
+    protected function getUrlSubmitter(int $numberOfStacks): ?UrlSubmitterInterface
     {
         foreach ($this->urlSubmitters as $urlSubmitter) {
             if ($urlSubmitter->supports($numberOfStacks)) {
@@ -69,7 +75,7 @@ readonly class SearchEngineNotifier
      * @param list<Stack> $stacks
      * @return array<string, non-empty-list<Stack>>
      */
-    private function groupStacksByHost(array $stacks): array
+    protected function groupStacksByHost(array $stacks): array
     {
         $groupedStacks = [];
 

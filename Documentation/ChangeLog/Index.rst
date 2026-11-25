@@ -15,6 +15,8 @@ Version 1.0.0
 *   [TASK] Register event listener via ``#[AsEventListener]`` and DataHandler hook via ``#[Autoconfigure]``
 *   [TASK] Depend on ``Psr\EventDispatcher\EventDispatcherInterface`` instead of the core implementation
 *   [TASK] Add PHPStan (level 9) configuration
+*   [TASK] Test PHP 8.5 in CI and ``runTests.sh``, remove deprecated PHPUnit ``cacheResult`` setting
+*   [TASK] Pass release data as environment variables in the TER release workflow and limit its permissions
 *   [REFACTOR] Split ``DataHandlerHook`` into single-responsibility services
     (``BackendContextValidator``, ``RecordResolver``, ``PageUidResolver``, ``LanguageResolver``,
     ``PagePreviewUrlBuilder``, ``PreviewUrlCollector``)
@@ -22,7 +24,11 @@ Version 1.0.0
     strategies, collected via DI tag ``indexnow.url_submitter``
 *   [REFACTOR] Introduce ``ApiKeyResolver`` as single source of truth for the site setting ``indexnow.apiKey``
 *   [REFACTOR] ``SearchEngineNotifier::notify()`` expects ``list<Stack>`` instead of ``\SplObjectStorage``
-*   [REFACTOR] Make value objects, events and listeners ``final``, services ``readonly``
+*   [REFACTOR] Make value objects, events, listeners and internal services ``final``. The notifier
+    classes stay extensible (``protected``, XCLASS or service alias) and URL submitters can be added or
+    replaced via the priority of the DI tag ``indexnow.url_submitter``
+*   [REFACTOR] ``ExtConf`` uses the Bing endpoint as constructor default, an emptied setting falls back to it
+*   [REFACTOR] Add ``Stack::fromRaw()`` to trim raw values, ``Stack`` uses constructor property promotion
 *   [BUGFIX] Do not HTML-encode preview URLs before storing them in the stack
 *   [BUGFIX] Prevent TypeError when a record to merge does not exist anymore
 *   [BUGFIX] Log missing API key in batch mode instead of silently skipping the host

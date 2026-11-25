@@ -113,7 +113,7 @@ readonly class StackRepository
         $url = $row['url'] ?? '';
         $targetPid = $row['target_pid'] ?? 0;
 
-        return new Stack(
+        return Stack::fromRaw(
             is_numeric($uid) ? (int)$uid : 0,
             is_string($url) ? $url : '',
             is_numeric($targetPid) ? (int)$targetPid : 0,
@@ -127,9 +127,6 @@ readonly class StackRepository
 
     private function getQueryBuilder(): QueryBuilder
     {
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE);
-        $queryBuilder->getRestrictions()->removeAll();
-
-        return $queryBuilder;
+        return $this->connectionPool->getQueryBuilderForTable(self::TABLE);
     }
 }

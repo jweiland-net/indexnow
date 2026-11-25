@@ -18,14 +18,18 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  */
 final readonly class Stack
 {
-    private string $url;
-
     public function __construct(
         private int $uid,
-        string $url,
+        private string $url,
         private int $targetPid = 0,
-    ) {
-        $this->url = trim($url);
+    ) {}
+
+    /**
+     * Creates a stack from raw (f.e. database) values, which may contain surrounding whitespace
+     */
+    public static function fromRaw(int $uid, string $url, int $targetPid = 0): self
+    {
+        return new self($uid, trim($url), $targetPid);
     }
 
     public function getUid(): int

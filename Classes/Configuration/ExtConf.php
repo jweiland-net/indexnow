@@ -24,11 +24,14 @@ final readonly class ExtConf
 {
     private const EXT_KEY = 'indexnow';
 
-    private const DEFAULT_SEARCH_ENGINE_ENDPOINT = 'https://www.bing.com/indexnow';
+    private const DEFAULT_SETTINGS = [
+        'searchEngineEndpoint' => 'https://www.bing.com/indexnow',
+        'notifyBatchMode' => false,
+    ];
 
     public function __construct(
-        private string $searchEngineEndpoint = '',
-        private bool $notifyBatchMode = false,
+        private string $searchEngineEndpoint = self::DEFAULT_SETTINGS['searchEngineEndpoint'],
+        private bool $notifyBatchMode = self::DEFAULT_SETTINGS['notifyBatchMode'],
     ) {}
 
     public static function create(ExtensionConfiguration $extensionConfiguration): self
@@ -43,18 +46,23 @@ final readonly class ExtConf
             return new self();
         }
 
-        $searchEngineEndpoint = $settings['searchEngineEndpoint'] ?? '';
-        $notifyBatchMode = $settings['notifyBatchMode'] ?? false;
+        $searchEngineEndpoint = $settings['searchEngineEndpoint'] ?? null;
+        $notifyBatchMode = $settings['notifyBatchMode'] ?? null;
 
         return new self(
-            searchEngineEndpoint: is_string($searchEngineEndpoint) ? trim($searchEngineEndpoint) : '',
-            notifyBatchMode: is_scalar($notifyBatchMode) && (bool)$notifyBatchMode,
+            // An emptied field in the extension settings falls back to the default endpoint
+            searchEngineEndpoint: is_string($searchEngineEndpoint) && trim($searchEngineEndpoint) !== ''
+                ? trim($searchEngineEndpoint)
+                : self::DEFAULT_SETTINGS['searchEngineEndpoint'],
+            notifyBatchMode: is_scalar($notifyBatchMode)
+                ? (bool)$notifyBatchMode
+                : self::DEFAULT_SETTINGS['notifyBatchMode'],
         );
     }
 
     public function getSearchEngineEndpoint(): string
     {
-        return $this->searchEngineEndpoint === '' ? self::DEFAULT_SEARCH_ENGINE_ENDPOINT : $this->searchEngineEndpoint;
+        return $this->searchEngineEndpoint;
     }
 
     public function isNotifyBatchMode(): bool

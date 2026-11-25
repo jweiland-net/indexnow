@@ -32,7 +32,7 @@ use TYPO3\CMS\Core\Utility\MathUtility;
  * New records are processed with their final UID, which DataHandler maps from the temporary "NEW..." ID.
  */
 #[Autoconfigure(public: true)]
-readonly class DataHandlerHook
+final readonly class DataHandlerHook
 {
     public function __construct(
         private StackRepository $stackRepository,

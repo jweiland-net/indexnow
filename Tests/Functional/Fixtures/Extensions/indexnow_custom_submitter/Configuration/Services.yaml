@@ -1,0 +1,10 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  JWeiland\IndexNow\Tests\Functional\Fixtures\Extensions\indexnow_custom_submitter\Classes\CustomUrlSubmitter:
+    tags:
+      - name: indexnow.url_submitter
+        priority: 100
