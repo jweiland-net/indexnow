@@ -21,73 +21,75 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * Process records of table tx_indexnow_stack and inform searchengine about modifications via indexnow
+ * Process records of table tx_indexnow_stack and inform search engines about modifications via IndexNow
  */
 #[AsCommand(
     name: 'indexnow:notify',
     description: 'Process records of table tx_indexnow_stack and inform searchengine about modifications via indexnow.',
 )]
-class NotifySearchEngineCommand extends Command
+final class NotifySearchEngineCommand extends Command
 {
-    /**
-     * Will be called by DI, so please don't add extbase classes with inject methods here.
-     */
     public function __construct(
-        protected SearchEngineNotifier $searchEngineNotifier,
-        protected StackRepository $stackRepository,
-        protected LoggerInterface $logger,
+        private readonly SearchEngineNotifier $searchEngineNotifier,
+        private readonly StackRepository $stackRepository,
+        private readonly LoggerInterface $logger,
     ) {
         parent::__construct();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $stackStorage = $this->getStackStorage($output);
+        $stacks = $this->collectValidStacks($output);
 
-        if ($stackStorage->count() === 0) {
-            $this->logger->info('No URL records available, nothing sent.');
-            $output->writeln('<info>No URL records available, nothing sent.</info>');
-            return self::SUCCESS;
+        if ($stacks === []) {
+            $this->report($output, 'info', 'No URL records available, nothing sent.');
+
+            return Command::SUCCESS;
         }
 
-        if (!$this->searchEngineNotifier->notify($stackStorage)) {
-            $this->logger->error('Batch sending failed, entries remain in stack.');
-            $output->writeln('<error>Batch sending failed, entries remain in stack.</error>');
-            return self::FAILURE;
+        if (!$this->searchEngineNotifier->notify($stacks)) {
+            $this->report($output, 'error', 'Batch sending failed, entries remain in stack.');
+
+            return Command::FAILURE;
         }
 
-        foreach ($stackStorage as $stack) {
+        foreach ($stacks as $stack) {
             $this->stackRepository->deleteByUid($stack->getUid());
         }
 
-        $this->logger->info(sprintf('Batch sent (%d URLs), all entries deleted', $stackStorage->count()));
-        $output->writeln(sprintf('<info>Batch sent (%d URLs), all entries deleted.</info>', $stackStorage->count()));
+        $this->report($output, 'info', sprintf('Batch sent (%d URLs), all entries deleted.', count($stacks)));
 
-        return self::SUCCESS;
+        return Command::SUCCESS;
     }
 
-    protected function getStackStorage(OutputInterface $output): \SplObjectStorage
+    /**
+     * Stacks with an invalid URL can never be sent. They will be deleted.
+     *
+     * @return list<Stack>
+     */
+    private function collectValidStacks(OutputInterface $output): array
     {
-        /** @var \SplObjectStorage<Stack> $stackStorage */
-        $stackStorage = new \SplObjectStorage();
+        $validStacks = [];
 
         foreach ($this->stackRepository->findAll() as $stack) {
-            if (!$stack->hasValidUrl()) {
-                $this->deleteInvalidStack($stack, $output);
+            if ($stack->hasValidUrl()) {
+                $validStacks[] = $stack;
                 continue;
             }
 
-            $stackStorage->attach($stack);
+            $this->stackRepository->deleteByUid($stack->getUid());
+            $this->report($output, 'info', 'URL record with invalid URL found. Record deleted. Skip.');
         }
 
-        return $stackStorage;
+        return $validStacks;
     }
 
-    protected function deleteInvalidStack(Stack $stack, OutputInterface $output): void
+    /**
+     * @param 'info'|'error' $level
+     */
+    private function report(OutputInterface $output, string $level, string $message): void
     {
-        $this->stackRepository->deleteByUid($stack->getUid());
-
-        $this->logger->info('URL record with invalid URL found. Record deleted. Skip.');
-        $output->writeln('<info>URL record with invalid URL found. Record deleted. Skip.</info>');
+        $this->logger->log($level, $message);
+        $output->writeln(sprintf('<%1$s>%2$s</%1$s>', $level, $message));
     }
 }

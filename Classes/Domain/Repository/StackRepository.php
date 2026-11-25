@@ -16,52 +16,39 @@ use JWeiland\IndexNow\Domain\Model\Stack;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
-use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
- * Repository to collect records from the table "tx_indexnow_stack"
+ * Repository for the records of table "tx_indexnow_stack"
  */
-class StackRepository
+readonly class StackRepository
 {
     public const TABLE = 'tx_indexnow_stack';
 
     public function __construct(
-        protected ConnectionPool $connectionPool,
+        private ConnectionPool $connectionPool,
     ) {}
 
     /**
-     * @return Stack[]
+     * @return list<Stack>
      */
     public function findAll(): array
     {
-        $queryBuilder = $this->getQueryBuilder();
-
-        $statement = $queryBuilder
-            ->select('uid', 'url', 'target_pid')
-            ->from(self::TABLE)
-            ->executeQuery();
-
-        $urlRecords = [];
-
         try {
-            while ($urlRecord = $statement->fetchAssociative()) {
-                $urlRecords[] = new Stack(
-                    (int)$urlRecord['uid'],
-                    (string)$urlRecord['url'],
-                    (int)$urlRecord['target_pid'],
-                );
-            }
+            $rows = $this->getQueryBuilder()
+                ->select('uid', 'url', 'target_pid')
+                ->from(self::TABLE)
+                ->executeQuery()
+                ->fetchAllAssociative();
         } catch (Exception) {
+            return [];
         }
 
-        return $urlRecords;
+        return array_map($this->mapRowToStack(...), $rows);
     }
 
     public function deleteByUid(int $uid): void
     {
         $queryBuilder = $this->getQueryBuilder();
-
         $queryBuilder
             ->delete(self::TABLE)
             ->where(
@@ -75,27 +62,29 @@ class StackRepository
 
     public function insert(string $url, int $pageUid): void
     {
-        if (!$this->hasUrl($url)) {
-            $now = time();
-
-            $queryBuilder = $this->getQueryBuilder();
-            $queryBuilder
-                ->insert(self::TABLE)
-                ->values([
-                    'url' => $url,
-                    'target_pid' => $pageUid,
-                    'tstamp' => $now,
-                    'crdate' => $now,
-                    'url_hash' => $this->hash($url),
-                ])
-                ->executeStatement();
+        if ($this->hasUrl($url)) {
+            return;
         }
+
+        $now = time();
+
+        $this->getQueryBuilder()
+            ->insert(self::TABLE)
+            ->values([
+                'url' => $url,
+                'target_pid' => $pageUid,
+                'tstamp' => $now,
+                'crdate' => $now,
+                'url_hash' => $this->hash($url),
+            ])
+            ->executeStatement();
     }
 
     public function hasUrl(string $url): bool
     {
+        $queryBuilder = $this->getQueryBuilder();
+
         try {
-            $queryBuilder = $this->getQueryBuilder();
             $existing = $queryBuilder
                 ->select('url_hash')
                 ->from(self::TABLE)
@@ -108,11 +97,27 @@ class StackRepository
                 ->executeQuery()
                 ->fetchOne();
         } catch (Exception) {
-            // Return "true" here to prevent the insertion of new records if an exception is thrown during the query execution.
+            // Return "true" to prevent the insertion of new records, if the query can not be executed
             return true;
         }
 
         return $existing !== false;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function mapRowToStack(array $row): Stack
+    {
+        $uid = $row['uid'] ?? 0;
+        $url = $row['url'] ?? '';
+        $targetPid = $row['target_pid'] ?? 0;
+
+        return new Stack(
+            is_numeric($uid) ? (int)$uid : 0,
+            is_string($url) ? $url : '',
+            is_numeric($targetPid) ? (int)$targetPid : 0,
+        );
     }
 
     private function hash(string $url): string
@@ -120,13 +125,10 @@ class StackRepository
         return sha1($url);
     }
 
-    protected function getQueryBuilder(): QueryBuilder
+    private function getQueryBuilder(): QueryBuilder
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE);
-        $queryBuilder
-            ->getRestrictions()
-            ->removeAll()
-            ->add(GeneralUtility::makeInstance(DeletedRestriction::class));
+        $queryBuilder->getRestrictions()->removeAll();
 
         return $queryBuilder;
     }

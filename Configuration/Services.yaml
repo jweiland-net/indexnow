@@ -4,15 +4,17 @@ services:
     autoconfigure: true
     public: false
 
+  _instanceof:
+    JWeiland\IndexNow\Notifier\Submitter\UrlSubmitterInterface:
+      tags: ['indexnow.url_submitter']
+
   JWeiland\IndexNow\:
     resource: '../Classes/*'
-    exclude: '../Classes/Domain/Model/*'
+    exclude:
+      - '../Classes/Domain/Model/*'
+      - '../Classes/Event/*'
+      - '../Classes/Configuration/Exception/*'
 
-  # Called by makeInstance in TYPO3s DataHandler
-  JWeiland\IndexNow\Hook\DataHandlerHook:
-    public: true
-
-  JWeiland\IndexNow\EventListener\RespectPagesWithNoIndexEventListener:
-    tags:
-      - name: event.listener
-        identifier: 'respectPagesWithNoIndexEventListener'
+  JWeiland\IndexNow\Notifier\SearchEngineNotifier:
+    arguments:
+      $urlSubmitters: !tagged_iterator indexnow.url_submitter
