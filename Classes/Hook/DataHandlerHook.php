@@ -11,190 +11,68 @@ declare(strict_types=1);
 
 namespace JWeiland\IndexNow\Hook;
 
-use JWeiland\IndexNow\Domain\Model\PreviewUrl;
 use JWeiland\IndexNow\Domain\Repository\StackRepository;
-use JWeiland\IndexNow\Event\ModifyPageUidEvent;
-use JWeiland\IndexNow\Event\ProvidePreviewUrlEvent;
-use Psr\Http\Message\ServerRequestInterface;
-use TYPO3\CMS\Backend\Routing\PreviewUriBuilder;
-use TYPO3\CMS\Backend\Utility\BackendUtility;
-use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use JWeiland\IndexNow\Service\BackendContextValidator;
+use JWeiland\IndexNow\Service\LanguageResolver;
+use JWeiland\IndexNow\Service\PageUidResolver;
+use JWeiland\IndexNow\Service\PreviewUrlCollector;
+use JWeiland\IndexNow\Service\RecordResolver;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
-use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
-use TYPO3\CMS\Core\Messaging\FlashMessageService;
-use TYPO3\CMS\Core\Page\PageRenderer;
-use TYPO3\CMS\Core\Routing\UnableToLinkToPageException;
-use TYPO3\CMS\Core\Utility\ArrayUtility;
-use TYPO3\CMS\Core\Utility\MathUtility;
 
 /**
- * Hook into DataHandler to submit a re-index request to indexnow.org
+ * Hook into DataHandler to queue the preview URLs of modified records for IndexNow
  */
-class DataHandlerHook
+#[Autoconfigure(public: true)]
+readonly class DataHandlerHook
 {
     public function __construct(
-        protected StackRepository $stackRepository,
-        protected PageRenderer $pageRenderer,
-        protected FlashMessageService $flashMessageService,
-        protected EventDispatcher $eventDispatcher,
+        private StackRepository $stackRepository,
+        private BackendContextValidator $backendContextValidator,
+        private RecordResolver $recordResolver,
+        private PageUidResolver $pageUidResolver,
+        private LanguageResolver $languageResolver,
+        private PreviewUrlCollector $previewUrlCollector,
     ) {}
 
     public function processDatamap_beforeStart(DataHandler $dataHandler): void
     {
-        if (!$this->isContextSafeForIndexNow()) {
+        if (!$this->backendContextValidator->isLiveEditorContext()) {
             return;
         }
 
         foreach ($dataHandler->datamap as $table => $records) {
-            foreach ($records as $recordUid => $record) {
-                $mergedRecord = $this->getMergedRecord($recordUid, $table, $record);
-
-                // Get language from mergedRecord -> sys_language_uid only works if table != pages
-                $sysLanguageUid = 0;
-                if (isset($mergedRecord['sys_language_uid']) && $mergedRecord['sys_language_uid'] > 0) {
-                    $sysLanguageUid = (int)$mergedRecord['sys_language_uid'];
-                }
-
-                // If the table is pages, we need to get sys_language_uid from $request object
-                if ($table === 'pages') {
-                    if (isset($GLOBALS['TYPO3_REQUEST']) && $GLOBALS['TYPO3_REQUEST'] instanceof ServerRequestInterface) {
-                        $queryParams = $GLOBALS['TYPO3_REQUEST']->getQueryParams();
-                        if (isset($queryParams['overrideVals']['pages']['sys_language_uid'])) {
-                            $sysLanguageUid = (int)$queryParams['overrideVals']['pages']['sys_language_uid'];
-                        }
-                    }
-                }
-
-                if ($mergedRecord === []) {
-                    continue;
-                }
-
-                $pageUid = $this->getPageUid($mergedRecord, $table);
-                if ($pageUid <= 0) {
-                    continue;
-                }
-
-                /** @var ProvidePreviewUrlEvent $providePreviewUrlEvent */
-                $providePreviewUrlEvent = $this->eventDispatcher->dispatch(
-                    new ProvidePreviewUrlEvent($table, $recordUid, $mergedRecord),
-                );
-
-                foreach ($this->collectPreviewUrls($providePreviewUrlEvent, $pageUid, $sysLanguageUid) as $previewUrl) {
-                    $this->stackRepository->insert(
-                        $previewUrl->getUrl(),
-                        $previewUrl->getPageUid() ?? $pageUid,
-                    );
-                }
+            foreach ($records as $recordUid => $recordFromRequest) {
+                $this->processRecord((string)$table, $recordUid, $recordFromRequest);
             }
         }
     }
 
     /**
-     * PreviewUriBuilder::buildUri() requires a real, persisted backend
-     * user session (FormProtection). DataHandler can also run without
-     * one, for example via CLI commands or MCP servers that construct
-     * a stub BackendUserAuthentication. IndexNow is a passive side
-     * effect of an editor's change and must never abort it, so skip
-     * processing entirely in such contexts.
+     * @param array<string, mixed> $recordFromRequest
      */
-    protected function isContextSafeForIndexNow(): bool
+    private function processRecord(string $table, int|string $recordUid, array $recordFromRequest): void
     {
-        $backendUser = $GLOBALS['BE_USER'] ?? null;
-        if (!$backendUser instanceof BackendUserAuthentication) {
-            return false;
+        $record = $this->recordResolver->resolve($table, $recordUid, $recordFromRequest);
+        if ($record === []) {
+            return;
         }
 
-        if ((int)($backendUser->workspace ?? 0) !== 0) {
-            return false;
+        $pageUid = $this->pageUidResolver->resolve($table, $record);
+        if ($pageUid <= 0) {
+            return;
         }
 
-        return (int)($backendUser->user['uid'] ?? 0) > 0;
-    }
-
-    /**
-     * Falls back to the single preview URL built via PreviewUriBuilder
-     * unless a listener already contributed at least one URL via
-     * ProvidePreviewUrlEvent::addPreviewUrl(), for example because the
-     * record is rendered on several pages or even several sites.
-     *
-     * @return PreviewUrl[]
-     */
-    protected function collectPreviewUrls(
-        ProvidePreviewUrlEvent $providePreviewUrlEvent,
-        int $pageUid,
-        int $sysLanguageUid,
-    ): array {
-        $previewUrls = $providePreviewUrlEvent->getPreviewUrls();
-        if ($previewUrls !== []) {
-            return $previewUrls;
-        }
-
-        $previewUrl = $this->getPreviewUrl($pageUid, $sysLanguageUid);
-        if ($previewUrl === null || $previewUrl === '') {
-            return [];
-        }
-
-        return [new PreviewUrl($previewUrl, $pageUid)];
-    }
-
-    protected function getPageUid(array $recordToBeStored, string $table): int
-    {
-        $pageUid = 0;
-        if (isset($recordToBeStored['uid'], $recordToBeStored['pid'])) {
-            $pageUid = (int)($table === 'pages' ? $recordToBeStored['uid'] : $recordToBeStored['pid']);
-        }
-
-        if ($table === 'pages') {
-            $pageRecord = $recordToBeStored;
-        } else {
-            $pageRecord = BackendUtility::getRecord('pages', $pageUid);
-        }
-
-        /** @var ModifyPageUidEvent $modifyPageUidEvent */
-        $modifyPageUidEvent = $this->eventDispatcher->dispatch(
-            new ModifyPageUidEvent($recordToBeStored, $table, $pageUid, $pageRecord),
-        );
-
-        return $modifyPageUidEvent->getPageUid();
-    }
-
-    protected function getPreviewUrl(int $pageUid, int $sysLanguageUid = 0): ?string
-    {
-        $anchorSection = '';
-        $additionalParams = '';
-
-        try {
-            $previewUriBuilder = PreviewUriBuilder::create($pageUid)
-                ->withSection($anchorSection)
-                ->withAdditionalQueryParameters($additionalParams);
-
-            // Only set language if it's different from default
-            if ($sysLanguageUid > 0) {
-                $previewUriBuilder = $previewUriBuilder->withLanguage($sysLanguageUid);
-            }
-            return htmlspecialchars((string)$previewUriBuilder->buildUri());
-        } catch (UnableToLinkToPageException) {
-            return null;
-        }
-    }
-
-    /**
-     * If NEW, $recordFromRequest will contain nearly all fields.
-     * If updated, $recordFromRequest will only contain modified fields. PID f.e. Is missing.
-     * Use this method to get a merged record (DB and Request).
-     */
-    protected function getMergedRecord(int|string $uid, string $table, array $recordFromRequest): array
-    {
-        if (!MathUtility::canBeInterpretedAsInteger($uid)) {
-            return $recordFromRequest;
-        }
-
-        $record = BackendUtility::getRecord($table, (int)$uid, 'uid,pid');
-        ArrayUtility::mergeRecursiveWithOverrule(
+        $previewUrls = $this->previewUrlCollector->collect(
+            $table,
+            $recordUid,
             $record,
-            $recordFromRequest,
+            $pageUid,
+            $this->languageResolver->resolve($table, $record),
         );
 
-        return $record;
+        foreach ($previewUrls as $previewUrl) {
+            $this->stackRepository->insert($previewUrl->getUrl(), $previewUrl->getPageUid() ?? $pageUid);
+        }
     }
 }
