@@ -12,24 +12,19 @@ declare(strict_types=1);
 namespace JWeiland\IndexNow\EventListener;
 
 use JWeiland\IndexNow\Event\ModifyPageUidEvent;
+use TYPO3\CMS\Core\Attribute\AsEventListener;
 
 /**
  * Prevent informing IndexNow about pages with the activated no_index property.
  */
-class RespectPagesWithNoIndexEventListener
+#[AsEventListener(identifier: 'respectPagesWithNoIndexEventListener')]
+final readonly class RespectPagesWithNoIndexEventListener
 {
     public function __invoke(ModifyPageUidEvent $modifyPageUidEvent): void
     {
-        $pageRecord = $modifyPageUidEvent->getPageRecord();
-        if (!is_array($pageRecord)) {
-            return;
-        }
+        $noIndex = $modifyPageUidEvent->getPageRecord()['no_index'] ?? 0;
 
-        if (!array_key_exists('no_index', $pageRecord)) {
-            return;
-        }
-
-        if ((int)$pageRecord['no_index'] === 1) {
+        if (is_numeric($noIndex) && (int)$noIndex === 1) {
             $modifyPageUidEvent->setPageUid(0);
         }
     }
