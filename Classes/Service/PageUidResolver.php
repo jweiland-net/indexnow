@@ -31,7 +31,10 @@ readonly class PageUidResolver
     public function resolve(string $table, array $record): int
     {
         $pageUid = $this->getPageUidFromRecord($table, $record);
-        $pageRecord = $table === 'pages' ? $record : BackendUtility::getRecord('pages', $pageUid);
+
+        // DataHandler has already written the record, so the database contains the full and current page record.
+        // The given record may only contain the changed fields.
+        $pageRecord = BackendUtility::getRecord('pages', $pageUid) ?? ($table === 'pages' ? $record : null);
 
         /** @var ModifyPageUidEvent $modifyPageUidEvent */
         $modifyPageUidEvent = $this->eventDispatcher->dispatch(
