@@ -14,7 +14,7 @@ namespace JWeiland\IndexNow\Tests\Unit\Configuration;
 use JWeiland\IndexNow\Configuration\ApiKeyResolver;
 use JWeiland\IndexNow\Configuration\Exception\ApiKeyNotAvailableException;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Site\Entity\NullSite;
 use TYPO3\CMS\Core\Site\Entity\Site;
@@ -24,7 +24,7 @@ use TYPO3\TestingFramework\Core\Unit\UnitTestCase;
 
 final class ApiKeyResolverTest extends UnitTestCase
 {
-    private SiteFinder&MockObject $siteFinderMock;
+    private SiteFinder&Stub $siteFinderStub;
 
     private ApiKeyResolver $subject;
 
@@ -32,8 +32,8 @@ final class ApiKeyResolverTest extends UnitTestCase
     {
         parent::setUp();
 
-        $this->siteFinderMock = $this->createMock(SiteFinder::class);
-        $this->subject = new ApiKeyResolver($this->siteFinderMock);
+        $this->siteFinderStub = self::createStub(SiteFinder::class);
+        $this->subject = new ApiKeyResolver($this->siteFinderStub);
     }
 
     private function makeSite(string $apiKey): Site
@@ -61,7 +61,7 @@ final class ApiKeyResolverTest extends UnitTestCase
     #[Test]
     public function getApiKeyForPageReturnsApiKey(): void
     {
-        $this->siteFinderMock->method('getSiteByPageId')->with(10)->willReturn($this->makeSite('my-api-key'));
+        $this->siteFinderStub->method('getSiteByPageId')->willReturnMap([[10, $this->makeSite('my-api-key')]]);
 
         self::assertSame('my-api-key', $this->subject->getApiKeyForPage(10));
     }
@@ -69,7 +69,7 @@ final class ApiKeyResolverTest extends UnitTestCase
     #[Test]
     public function getApiKeyForPageThrowsExceptionIfSiteNotFound(): void
     {
-        $this->siteFinderMock->method('getSiteByPageId')->willThrowException(new SiteNotFoundException('', 1));
+        $this->siteFinderStub->method('getSiteByPageId')->willThrowException(new SiteNotFoundException('', 1));
 
         $this->expectException(ApiKeyNotAvailableException::class);
         $this->expectExceptionCode(1636752398);
@@ -80,7 +80,7 @@ final class ApiKeyResolverTest extends UnitTestCase
     #[Test]
     public function getApiKeyForPageThrowsExceptionIfApiKeyIsEmpty(): void
     {
-        $this->siteFinderMock->method('getSiteByPageId')->willReturn($this->makeSite(''));
+        $this->siteFinderStub->method('getSiteByPageId')->willReturn($this->makeSite(''));
 
         $this->expectException(ApiKeyNotAvailableException::class);
         $this->expectExceptionCode(1636752399);

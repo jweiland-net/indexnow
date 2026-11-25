@@ -93,6 +93,8 @@ class SearchEngineNotifierTest extends FunctionalTestCase
             ->expects(self::atLeastOnce())
             ->method('info')
             ->with(self::identicalTo('No URL records available, nothing sent.'));
+        $this->requestFactoryMock->expects(self::never())->method('request');
+        $this->siteFinderMock->expects(self::never())->method('getSiteByPageId');
 
         $subject = $this->createSubject(new ExtConf());
 

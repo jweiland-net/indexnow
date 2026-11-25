@@ -36,7 +36,7 @@ class ApiKeyVerificationMiddlewareTest extends UnitTestCase
 
         $this->handlerMock = $this->createMock(RequestHandlerInterface::class);
         $this->subject = new ApiKeyVerificationMiddleware(
-            new ApiKeyResolver($this->createMock(SiteFinder::class)),
+            new ApiKeyResolver(self::createStub(SiteFinder::class)),
         );
     }
 
@@ -63,7 +63,7 @@ class ApiKeyVerificationMiddlewareTest extends UnitTestCase
     #[Test]
     public function processPassesThroughWhenNoSiteAttributePresent(): void
     {
-        $handlerResponse = $this->createMock(ResponseInterface::class);
+        $handlerResponse = self::createStub(ResponseInterface::class);
         $this->handlerMock->expects(self::once())->method('handle')->willReturn($handlerResponse);
 
         $request = new ServerRequest('https://example.com/some-key.txt', 'GET', 'php://input', [], ['REQUEST_URI' => '/some-key.txt']);
@@ -75,7 +75,7 @@ class ApiKeyVerificationMiddlewareTest extends UnitTestCase
     #[Test]
     public function processPassesThroughWhenNoApiKeyConfigured(): void
     {
-        $handlerResponse = $this->createMock(ResponseInterface::class);
+        $handlerResponse = self::createStub(ResponseInterface::class);
         $this->handlerMock->expects(self::once())->method('handle')->willReturn($handlerResponse);
 
         $site = new Site('test', 1, ['base' => 'https://example.com/'], SiteSettings::createFromSettingsTree([]));
@@ -89,7 +89,7 @@ class ApiKeyVerificationMiddlewareTest extends UnitTestCase
     #[Test]
     public function processPassesThroughWithNullSite(): void
     {
-        $handlerResponse = $this->createMock(ResponseInterface::class);
+        $handlerResponse = self::createStub(ResponseInterface::class);
         $this->handlerMock->expects(self::once())->method('handle')->willReturn($handlerResponse);
 
         $site = new NullSite();
@@ -103,7 +103,7 @@ class ApiKeyVerificationMiddlewareTest extends UnitTestCase
     #[Test]
     public function processPassesThroughWithInvalidRequestUri(): void
     {
-        $handlerResponse = $this->createMock(ResponseInterface::class);
+        $handlerResponse = self::createStub(ResponseInterface::class);
         $this->handlerMock->expects(self::once())->method('handle')->willReturn($handlerResponse);
 
         $site = $this->makeSite('https://example.com/', 'my-api-key');
@@ -117,7 +117,7 @@ class ApiKeyVerificationMiddlewareTest extends UnitTestCase
     #[Test]
     public function processPassesThroughNonTxtRequest(): void
     {
-        $handlerResponse = $this->createMock(ResponseInterface::class);
+        $handlerResponse = self::createStub(ResponseInterface::class);
         $this->handlerMock->expects(self::once())->method('handle')->willReturn($handlerResponse);
 
         $site = $this->makeSite('https://example.com/', 'my-api-key');
@@ -131,7 +131,7 @@ class ApiKeyVerificationMiddlewareTest extends UnitTestCase
     #[Test]
     public function processPassesThroughSubdirectoryTxtRequest(): void
     {
-        $handlerResponse = $this->createMock(ResponseInterface::class);
+        $handlerResponse = self::createStub(ResponseInterface::class);
         $this->handlerMock->expects(self::once())->method('handle')->willReturn($handlerResponse);
 
         $site = $this->makeSite('https://example.com/', 'my-api-key');
@@ -145,7 +145,7 @@ class ApiKeyVerificationMiddlewareTest extends UnitTestCase
     #[Test]
     public function processPassesThroughForNonMatchingTxtFile(): void
     {
-        $handlerResponse = $this->createMock(ResponseInterface::class);
+        $handlerResponse = self::createStub(ResponseInterface::class);
         $this->handlerMock->expects(self::once())->method('handle')->willReturn($handlerResponse);
 
         $site = $this->makeSite('https://example.com/', 'my-api-key');

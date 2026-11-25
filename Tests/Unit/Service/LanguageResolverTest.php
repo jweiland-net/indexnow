@@ -53,4 +53,19 @@ final class LanguageResolverTest extends UnitTestCase
 
         self::assertSame(1, (new LanguageResolver())->resolve('pages', ['sys_language_uid' => 1]));
     }
+
+    #[Test]
+    public function resolveForPagesIgnoresInvalidOverrideValues(): void
+    {
+        $GLOBALS['TYPO3_REQUEST'] = (new ServerRequest('https://example.com/typo3'))
+            ->withQueryParams(['overrideVals' => ['pages' => 'invalid']]);
+
+        self::assertSame(1, (new LanguageResolver())->resolve('pages', ['sys_language_uid' => 1]));
+    }
+
+    #[Test]
+    public function resolveForPagesIgnoresMissingRequest(): void
+    {
+        self::assertSame(1, (new LanguageResolver())->resolve('pages', ['sys_language_uid' => 1]));
+    }
 }

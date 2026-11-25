@@ -47,3 +47,8 @@ composer.lock
 /composer.json.orig
 /composer.json.testing
 /var
+
+# Ignore Playwright end-to-end testing stuff
+/Build/playwright/node_modules
+/Build/playwright/test-results
+/Build/playwright/playwright-report

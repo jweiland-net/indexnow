@@ -47,8 +47,8 @@ final class UrlSubmitterSupportsTest extends UnitTestCase
         bool $expectedBatch,
     ): void {
         $extConf = new ExtConf(notifyBatchMode: $notifyBatchMode);
-        $requestFactory = $this->createMock(RequestFactory::class);
-        $apiKeyResolver = new ApiKeyResolver($this->createMock(SiteFinder::class));
+        $requestFactory = self::createStub(RequestFactory::class);
+        $apiKeyResolver = new ApiKeyResolver(self::createStub(SiteFinder::class));
 
         $singleUrlSubmitter = new SingleUrlSubmitter($requestFactory, $apiKeyResolver, $extConf, new NullLogger());
         $batchUrlSubmitter = new BatchUrlSubmitter($requestFactory, $apiKeyResolver, $extConf, new NullLogger());
