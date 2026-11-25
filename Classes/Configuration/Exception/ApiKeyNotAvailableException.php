@@ -14,6 +14,6 @@ namespace JWeiland\IndexNow\Configuration\Exception;
 use TYPO3\CMS\Core\Exception;
 
 /**
- * This Exception will be thrown if an API key was not set in extension settings
+ * Thrown if no IndexNow API key is configured in the site settings of a page
  */
-class ApiKeyNotAvailableException extends Exception {}
+final class ApiKeyNotAvailableException extends Exception {}
