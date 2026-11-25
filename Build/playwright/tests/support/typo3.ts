@@ -83,6 +83,27 @@ export function indexNowLogSize(): number {
     .reduce((size, file) => size + fs.statSync(path.join(logDir, file)).size, 0);
 }
 
+const accessLogFile = process.env.TYPO3_ACCESS_LOG ?? '/var/log/apache2/access.log';
+
+/**
+ * Size in bytes of the web server access log inside the DDEV web container. Use it as marker for readAccessLogSince().
+ */
+export function accessLogSize(): number {
+  return Number(ddev(['exec', 'stat', '-c', '%s', accessLogFile]).trim());
+}
+
+/**
+ * Request lines of the web server access log written after the given marker.
+ * Unlike exception messages (Guzzle redacts query strings), the access log contains the full request URI.
+ */
+export function readAccessLogSince(marker: number): string[] {
+  return ddev(['exec', 'tail', '-c', `+${marker + 1}`, accessLogFile])
+    .split('\n')
+    .map((line) => line.match(/"([A-Z]+ \S+) HTTP\/[\d.]+" (\d{3})/))
+    .filter((match): match is RegExpMatchArray => match !== null)
+    .map((match) => `${match[1]} ${match[2]}`);
+}
+
 export async function loginToBackend(page: Page): Promise<void> {
   await page.goto('/typo3/');
   await page.fill('#t3-username', requireEnv('TYPO3_BE_USER'));

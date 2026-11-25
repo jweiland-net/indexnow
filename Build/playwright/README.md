@@ -28,6 +28,11 @@ npx playwright test
 ```
 
 Optional: `TYPO3_BASE_URL`, `TYPO3_PROJECT_DIR`, `INDEXNOW_ROOT_PAGE_UID` (1), `INDEXNOW_SUB_PAGE_UID` (2),
-`INDEXNOW_TRANSLATED_PAGE_UID` (23), `INDEXNOW_NO_INDEX_PAGE_UID` (4).
+`INDEXNOW_TRANSLATED_PAGE_UID` (23), `INDEXNOW_NO_INDEX_PAGE_UID` (4),
+`TYPO3_ACCESS_LOG` (`/var/log/apache2/access.log` inside the DDEV web container).
+
+The CLI tests use the API key file `/{apiKey}.txt` as local IndexNow endpoint (it answers GET and POST with 200)
+and verify the sent requests in the web server access log. Guzzle redacts query strings in exception messages,
+so the IndexNow log can not be used to check the `url` and `key` parameters.
 
 The global teardown empties `tx_indexnow_stack` and restores `notifyBatchMode`, `searchEngineEndpoint` and `no_index`.
